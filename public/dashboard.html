@@ -96,7 +96,22 @@ import React, { useEffect, useState } from "https://esm.sh/react@18.3.1";
 import { createRoot } from "https://esm.sh/react-dom@18.3.1/client";
 import { upload } from "https://esm.sh/@vercel/blob@0.27.0/client";
 
-const DEFAULT = ["CALL OPENING", "COMPLIANCE AND SCRIPT ADHERENCE", "2-WAY COMMUNICATION / ENGAGE", "PRODUCT AND PROCESS KNOWLEDGE", "SELF & COMPANY INTRODUCTION / PROFILING", "PITCHING STRATEGY", "CALL CLOSURE AND CORRECT DOCUMENTATION", "OBJECTION ON CALLS HANDLING", "COMMUNICATION AND SOFT SKILLS", "URGENCY AND PRODUCT VALUE CREATION", "RAPPORT BUILD", "CLOSURE", "HANDLING OBJECTION ON PRICING"].map((label) => ({ label, max: 10 }));
+const DEFAULT = [
+  ["INTRODUCTION", "Greeting, introduces self and Equentis/company, states purpose of call"],
+  ["INVESTOR PROFILING/PROBING", "Asks about current investments, capital available, experience, risk appetite, occupation, surplus"],
+  ["RAPPORT BUILDING", "Two-way conversation, personalization, listens and responds to the investor, not a monologue"],
+  ["STRATEGY PITCHING", "Explains MPO / 5-in-5 / combo strategies correctly with holding periods, returns logic, portfolio construction"],
+  ["OBJECTIONS ON CALL", "Handles doubts, fee questions, losses, comparisons; probes blocked funds and offers alternatives"],
+  ["MARKET UPDATES/ECONOMY", "Shares market/economy updates, sector trends, past performance talk"],
+  ["WEBSITE NAVIGATION", "Guides the investor through the website/dashboard live on call"],
+  ["URGENCY CREATION", "Creates genuine urgency (limited period pricing, festive offer, why start now)"],
+  ["TEMPLATES", "Call remarks/templates precise: remarks, where call taken from, content of the call"],
+  ["STAGE MOVEMENT", "Moves investor to next stage: risk profiling, registration, follow-up fixed with date/time, payment steps"],
+].map(([label, q]) => ({ label, max: 10, q }));
+const MAND = ["Call is recorded for quality and training purpose. (Within 3mts of a call).", "When you talk about returns on Investment of 3 lakhs, also talk about returns of 4 lakhs and 5 lakhs in MPO and 5into5", "Use Cagr Calculator when profiling the investors investment and returns", "Always talk about returns in numbers at least 3-4 times on a call.", "Reconfirm the returns in numbers with the investor is getting again before pitching the fees.", "Combo pitch needs to be used before you pitch the combo strategy", "Templates need to be précised: Remarks, Call taken from: Bay phone, Mobile, Content of the call", "Open and Use IBEF website"].join("\n");
+const INV_CATS = ["Not Applicable", "Fees_Gst", "Fees_Yearly Service", "Fees_Tranches", "6 Months Experience", "Research Team/Customer Service", "Relationship Manager", "Misinformation/Gurantee", "Professionalism", "Blank Call", "Enach Process", "Incorrect Investible Surplus", "Fees/Loss recovery", "Fees Remain Same", "Upfront Discount", "Mpo Average Holding Period", "Under_Overpromising Returns/Timeline", "Refund", "Call tagging/Notes", "System Use", "Demat Account", "Exit Calls"];
+const INV_REASONS = ["Not Applicable", "Did not inform about GST.", "Did not inform about yearly service.", "Did not inform about tranches.", "You can check or cancel after 6 months.", "Should not talk anything about Research Team Qualification,Experience.", "Should not say Ill be you Relationship manager.", "Incorrect Information given / Used Guaranteed statements.", "Was not polite / professional on call.", "Blank call.", "Did not Inform investor about Enach process.", "Did not pitch correct strategy as per investors investable surplus.", "Informed fees/loss will be recovered.", "Informed fees will always remain same.", "Gave discount upfrontly.", "Informed MPO average holding period is 3-4 months.", "Informed under realistic or over realistic returns.", "Informed about Refund", "All information to be given as per process and SEBI regulations", "All Recordings to be uploaded", "Suggested Demat Account", "You will also get exit calls"];
+const OBJS = ["Product_Fees is high", "Product_Cancel after 6 months", "Product_Give me a demo/trial", "Product_Reviews are bad", "Product_Give me a gurantee", "Product_Why should I join Research and Ranking", "Product_Im getting services at a better price", "Product_What if I do not get returns", "Product_Im investing in mutual funds/gold/fixed deposit", "War/Recession/Volatile/Elections/Budget/Tax/Risk/Market Crash", "What if I face loss", "Market is at All time high/Low", "I research my own stocks and I make better returns", "I invest in PMS services/brokers/other advisory services", "Don't have funds now"];
 const TENURES = ["0-3 Month", "3-6 Month", "More than 6 Month"];
 const STRATS = ["No Strategy", "5 in 5", "Combo", "MPO"];
 const STATUSES = ["Follow-up", "Interested", "Not Interested", "Not Connected"];
@@ -107,7 +122,7 @@ const heat = (p) => (p == null ? "#fff" : p >= 75 ? "#d7f2e6" : p >= 50 ? "#fdf0
 const rd = (n) => Math.round(n * 10) / 10;
 const avg = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
 const wkLbl = (t) => { if (!t) return "-"; const d = new Date(t); return `Week ${Math.ceil(d.getDate() / 7)} ${d.toLocaleString("en", { month: "short" })}`; };
-const MCFG = { auto: true, trainer: "", cc: "", thr: 70 };
+const MCFG = { auto: true, trainer: "", cc: "", thr: 70, calib: 0, mand: MAND };
 const weakOf = (r) => Object.entries(r.sc).filter(([, v]) => v.s / v.max < 0.6).map(([k, v]) => `${k} (${v.s}/${v.max})`);
 const cmpOf = (r, prev) => {
   if (!prev) return { status: "First audit" };
@@ -117,7 +132,57 @@ const cmpOf = (r, prev) => {
 };
 const uniq = (a) => [...new Set(a.filter(Boolean))].sort();
 const rd1 = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
-const wr = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+const shared = { on: false, busy: false };
+const hdrs = () => ({ "content-type": "application/json", "x-pass": rd1("dashpass", "") });
+const timers = {};
+const push = (body, key) => { if (!shared.on) return; clearTimeout(timers[key]); timers[key] = setTimeout(() => fetch("/api/store", { method: "POST", headers: hdrs(), body: JSON.stringify(body) }).catch(() => {}), 500); };
+const wr = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} if (k !== "audits") push({ action: "set", key: k, value: v }, k); };
+const pushAudit = (a) => { if (a && a.ts) push({ action: "audit", audit: a }, "a" + a.ts); };
+async function loadShared(tries = 0) {
+  try {
+    const r = await fetch("/api/store", { headers: hdrs() });
+    if (r.status === 401 && tries < 3) {
+      const p = window.prompt(tries ? "Wrong password. Enter the dashboard password" : "Enter the dashboard password");
+      if (!p) return { locked: true };
+      try { localStorage.setItem("dashpass", JSON.stringify(p)); } catch {}
+      return loadShared(tries + 1);
+    }
+    if (!r.ok) return null;
+    return await r.json();
+  } catch { return null; }
+}
+
+const apiCall = async (body) => {
+  const res = await fetch("/api/audit", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  const raw = await res.text();
+  let j; try { j = JSON.parse(raw); } catch { throw new Error("Server timeout/crash (" + res.status + "): " + raw.slice(0, 120)); }
+  if (!res.ok) throw new Error(j.error || "Error");
+  return j;
+};
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+async function auditCall(blobUrl, callType, params, mandatory, onStatus) {
+  let id;
+  try {
+    ({ id } = await apiCall({ action: "start", url: blobUrl }));
+    const t0 = Date.now();
+    for (;;) {
+      await sleep(5000);
+      const s = await apiCall({ action: "status", id });
+      if (s.status === "completed") break;
+      onStatus("transcribing the call... " + Math.round((Date.now() - t0) / 1000) + "s (long calls take a few minutes)");
+      if (Date.now() - t0 > 30 * 60000) throw new Error("Transcription is taking too long");
+    }
+    let last;
+    for (let i = 0; i < 4; i++) {
+      try { onStatus("auditing..." + (i ? " (retry " + i + ")" : "")); return await apiCall({ action: "audit", id, url: blobUrl, callType, params, mandatory, objOptions: OBJS }); }
+      catch (e) { last = e; if (!/demand|overload|try again|unavailable|503|429|time/i.test(e.message)) break; await sleep(8000 * (i + 1)); }
+    }
+    throw last;
+  } catch (e) {
+    try { await apiCall({ action: "cleanup", url: blobUrl }); } catch {}
+    throw e;
+  }
+}
 
 function dl(name, rows) {
   const csv = rows.map((r) => r.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
@@ -178,7 +243,30 @@ function HBars({ data }) {
   return <div style={{ maxHeight: 330, overflow: "auto", paddingRight: 6 }}>{data.map((d) => <div key={d.label} className="hb"><label title={d.label}>{d.label}</label><i><s style={{ width: `${d.v}%`, background: "#118dff" }} /></i><b>{d.v}%</b></div>)}</div>;
 }
 
-function Detail({ r, info, task, onSend }) {
+function InvalidBox({ r, onInvalid }) {
+  const v = r.invalid || { on: false, cat: "", catOther: "", reason: "", reasonOther: "" };
+  const set = (p) => onInvalid({ ...v, ...p });
+  return (
+    <div className="c noprint"><H3>Invalid call</H3>
+      <label className="row"><input type="checkbox" checked={!!v.on} onChange={(e) => set({ on: e.target.checked })} /> Mark this call as invalid (left out of scores and averages)</label>
+      {v.on && (
+        <div>
+          <div className="row"><b style={{ minWidth: 130 }}>INVALID CATEGORY</b>
+            <select value={v.cat} onChange={(e) => set({ cat: e.target.value })}><option value="">Select...</option>{INV_CATS.map((c) => <option key={c}>{c}</option>)}<option>Other:</option></select>
+            {v.cat === "Other:" && <input placeholder="Other: type the category" style={{ flex: 1, minWidth: 200 }} value={v.catOther} onChange={(e) => set({ catOther: e.target.value })} />}
+          </div>
+          <div className="row"><b style={{ minWidth: 130 }}>INVALID REASON</b>
+            <select value={v.reason} onChange={(e) => set({ reason: e.target.value })}><option value="">Select...</option>{INV_REASONS.map((c) => <option key={c}>{c}</option>)}<option>Other:</option></select>
+            {v.reason === "Other:" && <input placeholder="Other: type the reason" style={{ flex: 1, minWidth: 200 }} value={v.reasonOther} onChange={(e) => set({ reasonOther: e.target.value })} />}
+          </div>
+        </div>)}
+    </div>
+  );
+}
+const invCat = (h) => (h.invalid?.on ? (h.invalid.cat === "Other:" ? "Other: " + (h.invalid.catOther || "") : h.invalid.cat || "") : "");
+const invReason = (h) => (h.invalid?.on ? (h.invalid.reason === "Other:" ? "Other: " + (h.invalid.reasonOther || "") : h.invalid.reason || "") : "");
+
+function Detail({ r, info, task, onSend, onInvalid }) {
   return (
     <div>
       <div className="c" style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
@@ -206,11 +294,19 @@ function Detail({ r, info, task, onSend }) {
           {!r.taskId && <button className="g" onClick={() => onSend("trainer")}>Send to trainer</button>}
         </div>
       </div>
+      <InvalidBox r={r} onInvalid={onInvalid} />
       <div className="c" style={{ borderLeft: "4px solid #c0392b" }}><H3>Why the sale did / didn't happen</H3>{r.why}</div>
       <div className="c"><H3>Parameter scores</H3>
         {Object.entries(r.sc).map(([k, v]) => { const p = (v.s / v.max) * 100; return (
           <div className="bar" key={k}><label>{k}</label><i><s style={{ width: `${p}%`, background: colr(p) }} /></i><b>{v.s}/{v.max}</b></div>); })}
       </div>
+      <div className="c"><H3>Objections on call</H3>
+        {(r.objection_tags || []).length ? <div className="row">{r.objection_tags.map((o, i) => <span key={i} className="tag warn">{o}</span>)}</div> : <span style={{ color: "#667085" }}>No objection raised on this call.</span>}
+      </div>
+      {(r.mandatory || []).length > 0 && (
+        <div className="c"><H3>Mandatory statements to promote sales</H3>
+          {r.mandatory.map((m, i) => <div key={i} style={{ display: "flex", gap: 8, margin: "6px 0", alignItems: "flex-start" }}><span className={"tag " + (m.result === "yes" ? "on1" : m.result === "na" ? "off1" : "bad")}>{String(m.result || "").toUpperCase()}</span><div><div>{m.statement}</div>{m.evidence && <div className="q">{m.evidence}</div>}</div></div>)}
+        </div>)}
       <div className="c"><H3>Mistakes and how to fix them</H3>
         {(r.mistakes || []).map((m, i) => <div className="f" key={i}><b>{m.mistake}</b><div className="q">"{m.quote}"</div><div>Say it like this: {m.fix}</div></div>)}</div>
       <div className="c"><H3>Compliance flags</H3>
@@ -240,8 +336,23 @@ function Home() {
   const [status, setStatus] = useState(""), [err, setErr] = useState(""), [busy, setBusy] = useState(false);
   const [nc, setNc] = useState(""), [na, setNa] = useState({ name: "", center: "", tl: "", oo: "", tenure: TENURES[0], email: "", tlEmail: "" }), [bulk, setBulk] = useState("");
 
-  useEffect(() => { setParams(rd1("params", DEFAULT)); setHist(rd1("audits", [])); setCenters(rd1("centers", CENTERS)); setAmap(rd1("amap", [])); setMcfg(rd1("mcfg", MCFG)); loadTasks(); }, []);
-  const saveParams = (p) => { setParams(p); wr("params", p); };
+  const loadAllData = async () => {
+    if (shared.busy) return;
+    const d = await loadShared();
+    const local = { audits: rd1("audits", []), params2: rd1("params2", null), centers: rd1("centers", null), amap: rd1("amap", null), mcfg2: rd1("mcfg2", null) };
+    if (d && d.configured) {
+      shared.on = true;
+      ["params2", "centers", "amap", "mcfg2"].forEach((k) => { if (d[k] == null && local[k] != null) push({ action: "set", key: k, value: local[k] }, k); });
+      let a = d.audits || [];
+      if (!a.length && local.audits.length) { local.audits.forEach(pushAudit); a = local.audits; }
+      setHist([...a].sort((x, y) => (y.ts || 0) - (x.ts || 0)));
+      setParams(d.params2 || local.params2 || DEFAULT); setCenters(d.centers || local.centers || CENTERS); setAmap(d.amap || local.amap || []); setMcfg({ ...MCFG, ...(d.mcfg2 || local.mcfg2 || {}) });
+    } else if (!d || !d.locked) {
+      setParams(local.params2 || DEFAULT); setHist(local.audits); setCenters(local.centers || CENTERS); setAmap(local.amap || []); setMcfg({ ...MCFG, ...(local.mcfg2 || {}) });
+    }
+  };
+  useEffect(() => { loadAllData(); loadTasks(); const f = () => { if (!document.hidden) loadAllData(); }; window.addEventListener("focus", f); return () => window.removeEventListener("focus", f); }, []);
+  const saveParams = (p) => { setParams(p); wr("params2", p); };
   const saveCenters = (c) => { setCenters(c); wr("centers", c); };
   const saveMap = (m) => { setAmap(m); wr("amap", m); };
 
@@ -269,7 +380,8 @@ function Home() {
     saveCenters([...centers]); saveMap(m); setBulk("");
   };
 
-  const saveCfg = (c) => { setMcfg(c); wr("mcfg", c); };
+  const setInvalid = (r, inv) => { const nh = hist.map((x) => (x.ts === r.ts ? { ...x, invalid: inv } : x)); setHist(nh); wr("audits", nh); pushAudit({ ...r, invalid: inv }); setCur({ ...r, invalid: inv }); };
+  const saveCfg = (c) => { setMcfg(c); wr("mcfg2", c); };
   const loadTasks = async () => { try { const r = await fetch("/api/training"); if (r.ok) setTasks((await r.json()).tasks || []); } catch {} };
   const needsTrain = (r) => mcfg.trainer.trim() && r.total < Number(mcfg.thr || 0);
   const send = async (r, mode) => {
@@ -284,40 +396,38 @@ function Home() {
       return { ...r, mail: m, taskId: j.taskId || r.taskId };
     } catch (e) { return { ...r, mail: { ...(r.mail || {}), err: e.message } }; }
   };
-  const manual = async (r, mode) => { setBusy(true); const u = await send(r, mode); const nh = hist.map((x) => (x.ts === r.ts ? u : x)); setHist(nh); wr("audits", nh); setCur(u); setBusy(false); loadTasks(); };
+  const manual = async (r, mode) => { setBusy(true); const u = await send(r, mode); const nh = hist.map((x) => (x.ts === r.ts ? u : x)); setHist(nh); wr("audits", nh); pushAudit(u); setCur(u); setBusy(false); loadTasks(); };
 
   const run = async () => {
     setErr("");
     const ag = amap.find((a) => a.name === rep);
     if (!ag) { setErr("Select an agent first. Add agents under Admin Settings > Agent Mapping."); return; }
-    setBusy(true); let h = hist;
+    setBusy(true); shared.busy = true; let h = hist;
     for (const f of files) {
       try {
         setStatus(`${f.name}: uploading...`);
         const blob = await upload(`calls/${Date.now()}-${f.name}`, f, { access: "public", handleUploadUrl: "/api/upload" });
-        setStatus(`${f.name}: transcribing and auditing (1-3 min)...`);
-        const res = await fetch("/api/audit", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ url: blob.url, callType, params }) });
-        const j = await res.json();
-        if (!res.ok) throw new Error(j.error);
+        const j = await auditCall(blob.url, callType, params, (mcfg.mand || "").split("\n").map((x) => x.trim()).filter(Boolean), (m) => setStatus(`${f.name}: ${m}`));
         const sc = {}; let s = 0, m = 0;
-        params.forEach((p) => { const v = Math.max(0, Math.min(p.max, Number(j.result.scores?.[p.label]) || 0)); sc[p.label] = { s: v, max: p.max }; s += v; m += p.max; });
+        params.forEach((p) => { const v = Math.max(0, Math.min(p.max, Math.round(((Number(j.result.scores?.[p.label]) || 0) + Number(mcfg.calib || 0) * (p.max / 10)) * 2) / 2)); sc[p.label] = { s: v, max: p.max }; s += v; m += p.max; });
         let r = { ...j.result, sc, total: m ? Math.round((s / m) * 100) : 0, rep: ag.name, center: ag.center, tl: ag.tl, file: f.name, type: callType, strategy, cstatus, oo: ag.oo || "", tenure: ag.tenure || "", ts: Date.now(), date: new Date().toLocaleString() };
         delete r.scores;
         r.cmp = cmpOf(r, h.find((x) => x.rep === ag.name));
         if (mcfg.auto) { setStatus(`${f.name}: sending emails...`); r = await send(r, needsTrain(r) ? "both" : "audit"); }
-        h = [r, ...h].slice(0, 300); setHist(h); setCur(r); wr("audits", h); setTab("dash"); loadTasks();
+        h = [r, ...h]; setHist(h); setCur(r); wr("audits", h); pushAudit(r); setTab("dash"); loadTasks();
       } catch (e) { setErr(`${f.name}: ${e.message}`); }
     }
-    setStatus(""); setBusy(false); setFiles([]);
+    setStatus(""); setBusy(false); shared.busy = false; setFiles([]);
   };
 
-  const list = hist.filter((h) => {
+  const listAll = hist.filter((h) => {
     const i = info(h);
     return (fc === "All" || i.center === fc) && (ft === "All" || i.tl === ft) && (fa === "All" || h.rep === fa) &&
       (fs === "All" || (fs === "Active" ? i.active : !i.active)) &&
       (fw === "All" || wkLbl(h.ts) === fw) && (fo === "All" || (i.oo || "-") === fo) && (fn === "All" || (i.tenure || "-") === fn) && (fg === "All" || (h.strategy || "-") === fg) && (fct === "All" || (h.type || "-") === fct) &&
       (!from || (h.ts && h.ts >= new Date(from).getTime())) && (!to || (h.ts && h.ts <= new Date(to).getTime() + 864e5 - 1));
   });
+  const list = listAll.filter((h) => !h.invalid?.on);
   const rows = uniq(list.map((h) => h.rep)).map((a) => {
     const au = list.filter((h) => h.rep === a), i = info(au[0]);
     return { a, center: i.center, tl: i.tl, active: i.active, n: au.length, tot: Math.round(avg(au.map((h) => h.total))),
@@ -429,16 +539,27 @@ function Home() {
             <p style={{ color: "#667085", fontSize: 13, marginBottom: 0 }}>Needs RESEND_API_KEY and MAIL_FROM in your Vercel environment variables.</p>
           </div>
           <div className="c">
+            <H3>Mandatory statements</H3>
+            <p style={{ color: "#667085", marginTop: 0 }}>One per line. Each is checked Yes / No / NA on every call.</p>
+            <textarea style={{ width: "100%", minHeight: 150 }} value={mcfg.mand || ""} onChange={(e) => saveCfg({ ...mcfg, mand: e.target.value })} />
+          </div>
+          <div className="c">
+            <H3>Scoring calibration</H3>
+            <p style={{ color: "#667085", marginTop: 0 }}>Slide to make the AI scorer more lenient (+) or stricter (-). The shift is added to every parameter score on newly scored calls. Old scorecards do not change.</p>
+            <div className="row"><span>Stricter</span><input type="range" min="-3" max="3" step="0.5" style={{ flex: 1 }} value={mcfg.calib || 0} onChange={(e) => saveCfg({ ...mcfg, calib: Number(e.target.value) })} /><span>More lenient</span><b style={{ minWidth: 40 }}>{(mcfg.calib || 0) > 0 ? "+" : ""}{mcfg.calib || 0}</b></div>
+          </div>
+          <div className="c">
             <H3>Scoring parameters</H3>
             <p style={{ color: "#667085", marginTop: 0 }}>Rename a parameter, choose max points (5 or 10), or add a new one. New audits will use these settings.</p>
             {params.map((p, i) => (
               <div className="row" key={i}>
                 <input style={{ flex: 1, minWidth: 200 }} value={p.label} onChange={(e) => saveParams(params.map((x, j) => (j === i ? { ...x, label: e.target.value.toUpperCase() } : x)))} />
                 <select value={p.max} onChange={(e) => saveParams(params.map((x, j) => (j === i ? { ...x, max: Number(e.target.value) } : x)))}><option value={5}>5 points</option><option value={10}>10 points</option></select>
+                <input style={{ flex: 3, minWidth: 280 }} placeholder="What the scorer looks for (the question)" value={p.q || ""} onChange={(e) => saveParams(params.map((x, j) => (j === i ? { ...x, q: e.target.value } : x)))} />
                 <button className="g" onClick={() => saveParams(params.filter((_, j) => j !== i))}>Remove</button>
               </div>
             ))}
-            <div className="row"><button onClick={() => saveParams([...params, { label: "NEW PARAMETER", max: 10 }])}>+ Add parameter</button><button className="g" onClick={() => saveParams(DEFAULT)}>Reset to default</button></div>
+            <div className="row"><button onClick={() => saveParams([...params, { label: "NEW PARAMETER", max: 10, q: "" }])}>+ Add parameter</button><button className="g" onClick={() => saveParams(DEFAULT)}>Reset to default</button></div>
             <p style={{ color: "#667085", fontSize: 13 }}>Note: settings and audits are currently saved in this browser only.</p>
           </div>
         </div>
@@ -485,7 +606,7 @@ function Home() {
             <div className="row">
               <h3 style={{ margin: 0, flex: 1 }}>Agent-wise report</h3>
               <button className="g" disabled={!rows.length} onClick={() => dl("agent-report.csv", [["Center", "TL Name", "Agent Name", "Status", "Audit Count", ...params.map((p) => p.label), "Total %"], ...rows.map((r) => [r.center, r.tl, r.a, r.active ? "Active" : "Inactive", r.n, ...r.cells.map((c, i) => (c == null ? "" : rd(c * params[i].max))), r.tot])])}>Report Download (Excel)</button>
-              <button className="g" disabled={!list.length} onClick={() => dl("audit-wise-report.csv", [["Date", "Center", "TL Name", "Agent Name", "File", "Call Type", "Outcome", "Total %", ...params.map((p) => p.label), "Why"], ...list.map((h) => { const i = info(h); return [h.date, i.center, i.tl, h.rep, h.file, h.type, h.outcome, h.total, ...params.map((p) => h.sc[p.label]?.s ?? ""), h.why]; })])}>Audit-wise Download</button>
+              <button className="g" disabled={!listAll.length} onClick={() => dl("audit-wise-report.csv", [["Date", "Center", "TL Name", "Agent Name", "File", "Call Type", "Outcome", "Total %", ...params.map((p) => p.label), "Why", "Objections on call", "Mandatory (Yes/No/NA)", "Invalid", "Invalid Category", "Invalid Reason"], ...listAll.map((h) => { const i = info(h); return [h.date, i.center, i.tl, h.rep, h.file, h.type, h.outcome, h.total, ...params.map((p) => h.sc[p.label]?.s ?? ""), h.why, (h.objection_tags || []).join("; "), (h.mandatory || []).map((m) => String(m.result || "").toUpperCase()).join("/"), h.invalid?.on ? "Yes" : "No", invCat(h), invReason(h)]; })])}>Audit-wise Download</button>
               <button className="g" onClick={() => window.print()}>Print / PDF</button>
             </div>
             {!rows.length ? <div className="empty">No audits match these filters. Upload a call from the "New Audit" tab or change the filters.</div> : (
@@ -508,11 +629,11 @@ function Home() {
               </div>
             </div>
           )}
-          {cur && <div className="noprint"><h3>Latest audit</h3><Detail r={cur} info={info(cur)} task={tasks.find((t) => t.id === cur.taskId)} onSend={(m) => manual(cur, m)} /></div>}
+          {cur && <div className="noprint"><h3>Latest audit</h3><Detail r={cur} info={info(cur)} task={tasks.find((t) => t.id === cur.taskId)} onSend={(m) => manual(cur, m)} onInvalid={(inv) => setInvalid(cur, inv)} /></div>}
           <div className="c noprint"><H3>Audit history</H3>
-            {!list.length && <div className="empty">No audit history yet.</div>}
-            {list.map((h, i) => <div key={i} className="hist" onClick={() => { setCur(h); window.scrollTo({ top: document.body.scrollHeight * 0.4, behavior: "smooth" }); }} style={{ borderTop: i ? "1px solid #e3e6ec" : 0 }}>
-              <span>{h.rep} · {info(h).center} · {h.file}<br /><small style={{ color: "#667085" }}>{h.date} · {h.type}</small></span><span><span className="score" style={{ background: colr(h.total) }}>{h.total}%</span>{h.cmp && h.cmp.delta != null && <span style={{ color: h.cmp.delta > 0 ? "#0b7a5b" : h.cmp.delta < 0 ? "#c0392b" : "#667085", fontWeight: 700, marginLeft: 6 }}>{h.cmp.delta > 0 ? "▲" : h.cmp.delta < 0 ? "▼" : "–"} {Math.abs(h.cmp.delta)}</span>} <span style={{ marginLeft: 6 }}>{h.outcome}</span></span></div>)}
+            {!listAll.length && <div className="empty">No audit history yet.</div>}
+            {listAll.map((h, i) => <div key={i} className="hist" onClick={() => { setCur(h); window.scrollTo({ top: document.body.scrollHeight * 0.4, behavior: "smooth" }); }} style={{ borderTop: i ? "1px solid #e3e6ec" : 0 }}>
+              <span>{h.rep} · {info(h).center} · {h.file}<br /><small style={{ color: "#667085" }}>{h.date} · {h.type}</small>{h.invalid?.on && <span className="tag bad" style={{ marginLeft: 6 }}>INVALID</span>}</span><span><span className="score" style={{ background: colr(h.total) }}>{h.total}%</span>{h.cmp && h.cmp.delta != null && <span style={{ color: h.cmp.delta > 0 ? "#0b7a5b" : h.cmp.delta < 0 ? "#c0392b" : "#667085", fontWeight: 700, marginLeft: 6 }}>{h.cmp.delta > 0 ? "▲" : h.cmp.delta < 0 ? "▼" : "–"} {Math.abs(h.cmp.delta)}</span>} <span style={{ marginLeft: 6 }}>{h.outcome}</span></span></div>)}
           </div>
         </div>
       )}
