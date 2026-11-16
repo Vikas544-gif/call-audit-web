@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Training plan</title>
+<style>
+body{margin:0;background:#f5f6f8;color:#14181f;font:15px/1.5 Arial,Helvetica,sans-serif}
+.w{max-width:620px;margin:0 auto;padding:18px}
+.c{background:#fff;border:1px solid #e3e6ec;border-radius:12px;padding:16px;margin-bottom:12px}
+h1{font-size:20px;margin:4px 0 12px}label{display:block;font-weight:700;margin:10px 0 4px;font-size:13px}
+input,select,textarea{width:100%;box-sizing:border-box;padding:9px;border:1px solid #cfd4dc;border-radius:8px;font:inherit}
+button{background:#0b7a5b;color:#fff;border:0;border-radius:8px;padding:11px 18px;font-weight:700;font-size:15px;cursor:pointer;margin-top:14px}
+.tag{display:inline-block;background:#fdf0d0;color:#b7791f;border-radius:99px;padding:2px 10px;font-size:12px;font-weight:700;margin:2px}
+.err{color:#c0392b}.ok{color:#0b7a5b;font-weight:700}
+</style></head><body><div class="w">
+<h1>Training plan</h1>
+<div id="info" class="c">Loading...</div>
+<div id="form" class="c" style="display:none">
+<label>Your name (trainer)</label><input id="trainer">
+<label>Action taken</label>
+<select id="action"><option>1:1 coaching</option><option>Call listening</option><option>Script refresher</option><option>Role play</option><option>Product / process session</option><option>Other</option></select>
+<label>Training date</label><input id="trainDate" type="date">
+<label>Next review date</label><input id="nextReview" type="date">
+<label>Notes</label><textarea id="notes" rows="4"></textarea>
+<button id="go">Submit</button><div id="msg"></div>
+</div></div>
+<script>
+const id = new URLSearchParams(location.search).get("id");
+const $ = (x) => document.getElementById(x);
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+(async () => {
+  try {
+    const r = await fetch("/api/training?id=" + encodeURIComponent(id || ""));
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || "Error");
+    const t = j.task;
+    $("info").innerHTML = "<b>" + esc(t.agent) + "</b>" + (t.center ? " &middot; " + esc(t.center) : "") + " &middot; audit score <b>" + esc(t.score) + "%</b>" +
+      ((t.weak || []).length ? "<p>Weak parameters:<br>" + t.weak.map((w) => '<span class="tag">' + esc(w) + "</span>").join("") + "</p>" : "") +
+      ((t.mistakes || []).length ? "<p>Key mistakes:</p><ul>" + t.mistakes.map((m) => "<li>" + esc(m) + "</li>").join("") + "</ul>" : "") +
+      (t.status === "Submitted" ? '<p class="ok">Already submitted by ' + esc(t.trainer) + ". You can submit again to update it.</p>" : "");
+    $("form").style.display = "block";
+  } catch (e) { $("info").innerHTML = '<span class="err">' + esc(e.message) + "</span>"; }
+})();
+$("go").onclick = async () => {
+  $("msg").textContent = "";
+  const body = { id, trainer: $("trainer").value, action: $("action").value, trainDate: $("trainDate").value, nextReview: $("nextReview").value, notes: $("notes").value };
+  try {
+    const r = await fetch("/api/training", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || "Error");
+    $("form").innerHTML = '<p class="ok">Thank you. Your training plan has been recorded.</p>';
+  } catch (e) { $("msg").innerHTML = '<p class="err">' + esc(e.message) + "</p>"; }
+};
+</script></body></html>
