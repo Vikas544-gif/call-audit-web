@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sales Call Audit Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+:root{--ink:#0e1a2b;--ink2:#1b2c47;--paper:#f2f4f7;--line:#dde2ea;--mute:#667085;--good:#0b7a5b;--warn:#c9831a;--bad:#c43d2f}
+*{box-sizing:border-box}
+body{margin:0;font-family:Manrope,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--paper);color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.45}
+.top{background:var(--ink);color:#fff;padding:14px 24px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;position:sticky;top:0;z-index:20;box-shadow:0 1px 0 rgba(255,255,255,.06)}
+.brand{display:flex;align-items:center;gap:12px;margin-right:auto}
+.brand svg{flex:none}.brand b{font-size:17px;font-weight:800;letter-spacing:-.01em;display:block}
+.brand span{font-size:12px;color:#9fb0c8;display:block}
+.top .tabs{margin:0;background:var(--ink2);padding:4px;border-radius:10px;gap:2px}
+.top .tabs button{background:transparent;color:#b9c6da;border:0;padding:8px 16px;border-radius:7px}
+.top .tabs button:hover{color:#fff}
+.top .tabs button.on{background:#fff;color:var(--ink)}
+.main{max-width:1320px;margin:0 auto;padding:22px 24px 60px}
+.c{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:14px}
+.c h3{font-size:15px;font-weight:700;margin:0 0 12px}
+.k{display:grid;grid-template-columns:minmax(260px,1.3fr) repeat(3,minmax(150px,1fr));gap:14px;margin-bottom:14px}
+.k .c{margin:0}
+.k .st{border-top:3px solid var(--ink);display:flex;flex-direction:column;justify-content:center}
+.k .st b{font-size:32px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.k .st span{color:var(--mute);font-size:13px;margin-top:4px}
+.ringc{display:flex;align-items:center;gap:18px;background:var(--ink);color:#fff;border-color:var(--ink)}
+.ringc .lb{font-size:13px;color:#9fb0c8}.ringc .vd{font-size:20px;font-weight:800;margin-top:2px}
+.ring{position:relative;width:104px;height:104px;flex:none}
+.ring svg{transform:rotate(-90deg)}
+.ring b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;letter-spacing:-.02em}
+.t{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
+.t th,.t td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:center}
+.t th{background:var(--ink);color:#fff;font-size:11.5px;font-weight:600;position:sticky;top:0;line-height:1.3}
+.t td.l,.t th.l{text-align:left}
+.t tbody tr:hover td{box-shadow:inset 0 0 0 999px rgba(14,26,43,.035)}
+.t td input,.t td select{width:100%}
+.sc{overflow:auto;max-height:70vh;border:1px solid var(--line);border-radius:10px;margin-bottom:12px}
+.sc .t th:first-child{border-top-left-radius:9px}.sc .t th:last-child{border-top-right-radius:9px}
+button{border:0;border-radius:8px;padding:9px 16px;font:inherit;font-weight:700;font-size:13.5px;cursor:pointer;background:var(--good);color:#fff;transition:filter .15s,background .15s}
+button:hover:not(:disabled){filter:brightness(1.08)}
+button.g{background:#fff;color:var(--ink);border:1px solid #cfd4dc}
+button.g:hover:not(:disabled){background:var(--paper);filter:none}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--good);outline-offset:2px}
+input,select,textarea{padding:8px 10px;border-radius:8px;border:1px solid #cfd4dc;font:inherit;background:#fff;color:var(--ink)}
+.bar{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:13px}
+.bar label{width:230px;color:#344054;font-weight:600}.bar i{flex:1;height:10px;background:#e8ebf0;border-radius:6px;overflow:hidden}
+.bar s{display:block;height:100%;border-radius:6px}.bar b{width:48px;text-align:right}
+.f{border-left:3px solid var(--bad);padding:8px 12px;margin:10px 0;background:var(--paper);border-radius:0 8px 8px 0}
+.q{color:var(--mute);font-style:italic;margin:2px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.tag{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:700}
+.on1{background:#d7f2e6;color:var(--good)}.off1{background:#eceef2;color:var(--mute)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.cols .c{margin:0}
+.hist{display:flex;justify-content:space-between;align-items:center;padding:11px 8px;cursor:pointer;border-radius:8px}
+.hist:hover{background:var(--paper)}
+.score{display:inline-block;min-width:54px;text-align:center;padding:3px 10px;border-radius:99px;color:#fff;font-weight:800;font-size:13px}
+.empty{color:var(--mute);padding:22px;text-align:center;border:1px dashed #cfd4dc;border-radius:10px}
+.band{background:#0f1f3d;color:#fff;border-radius:14px;padding:18px 20px;margin-bottom:14px}
+.band h2{margin:0;font-size:26px;font-weight:800;letter-spacing:-.01em}
+.band .bt span{color:#7fb3ff;font-size:12px;font-weight:600}
+.flt{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.flt label{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;color:#cbd8ee;flex:1 1 125px;max-width:190px;min-width:115px}
+.flt select,.flt input{padding:6px 8px;border-radius:5px;border:1px solid #6b7fa3;font-size:13px;font-weight:600;width:100%}
+.kp{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.kc{background:#fff;border:2px solid;border-radius:12px;padding:10px 14px 6px}
+.kc span{font-size:11px;font-weight:800;color:#555;display:block}
+.kc b{display:block;text-align:center;font-size:40px;font-weight:600;line-height:1.35}
+.gr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.ch{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}
+.ch h4{margin:0 0 10px;font-size:14px;font-weight:800}
+.stk{display:flex;flex-direction:column;gap:12px}
+.hb{display:grid;grid-template-columns:minmax(110px,42%) 1fr 50px;gap:8px;align-items:center;margin:6px 0;font-size:12px}
+.hb label{font-weight:700;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb i{height:10px;background:#e8ebf0;border-radius:4px;overflow:hidden}
+.hb s{display:block;height:100%;border-radius:4px}
+.hb b{font-size:12.5px}
+@media(max-width:1100px){.gr{grid-template-columns:repeat(2,minmax(0,1fr))}.kp{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){.gr{grid-template-columns:1fr}.kp{grid-template-columns:1fr 1fr}}
+.tag.bad{background:#f9d9d5;color:#c43d2f}.tag.warn{background:#fdf0d0;color:#b7791f}
+@media(max-width:700px){.gr .ch{grid-column:auto!important}}
+.slg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:14px}
+.sl{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:10px 12px}
+.sl h5{margin:0 0 8px;font-size:11px;font-weight:800;color:#cbd8ee;letter-spacing:.04em;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.sl h5 em{font-style:normal;color:#7fb3ff;font-weight:700;text-transform:none;letter-spacing:0}
+.sl .bx{display:flex;flex-wrap:wrap;gap:6px;max-height:112px;overflow:auto}
+.sl .bx button{background:rgba(255,255,255,.1);color:#e6eefc;border:1px solid rgba(255,255,255,.18);padding:5px 11px;font-size:12.5px;font-weight:700;border-radius:7px}
+.sl .bx button:hover:not(:disabled){background:rgba(255,255,255,.2);filter:none}
+.sl .bx button.on{background:#fff;color:var(--ink);border-color:#fff}
+.sl input{width:100%;margin-bottom:8px;padding:5px 8px;font-size:12.5px;border-radius:6px;border:1px solid #6b7fa3}
+@media(max-width:900px){.slg{grid-template-columns:1fr}}
+.cg{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.cd{background:#fff;border:1px solid var(--line);border-left:5px solid var(--mute);border-radius:12px;padding:13px 14px;cursor:pointer;transition:box-shadow .15s,transform .15s}
+.cd:hover{box-shadow:0 6px 18px rgba(14,26,43,.12);transform:translateY(-1px)}
+.cd .h{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.cd .h b{font-size:15px}.cd small{color:var(--mute);display:block;font-size:12px}
+.cd .m{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;font-size:12px}
+.cd .m span{background:var(--paper);border-radius:6px;padding:3px 8px;font-weight:700}
+.mod{position:fixed;inset:0;background:rgba(14,26,43,.55);z-index:50;overflow:auto;padding:24px 12px}
+.mbox{max-width:900px;margin:0 auto;background:var(--paper);border-radius:14px;padding:16px 16px 6px}
+.mbox .xb{position:sticky;top:0;display:flex;justify-content:flex-end;margin:-4px 0 8px}
+.lock{max-width:360px;margin:12vh auto;background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px}
+.warn{background:#fdf0d0;color:#7a5410;border:1px solid #ecd28c;border-radius:10px;padding:9px 14px;margin-bottom:14px;font-size:13px;font-weight:600}
+@media print{.flt{display:none!important}.slg,.mod{display:none!important}}
+@media(max-width:900px){.k{grid-template-columns:1fr 1fr}.ringc{grid-column:1/-1}.bar label{width:130px}.top{padding:12px 14px}.main{padding:14px}}
+@media print{.top,.tabs,button,.noprint{display:none!important}.sc{max-height:none}body{background:#fff}}
+</style>
+</head>
+<body>
+<div id="root">Loading...</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
+<script type="text/babel" data-type="module" data-presets="react">
+import React, { useEffect, useRef, useState } from "https://esm.sh/react@18.3.1";
+import { createRoot } from "https://esm.sh/react-dom@18.3.1/client";
+import { upload } from "https://esm.sh/@vercel/blob@0.27.0/client";
+
+const DEFAULT = ["CALL OPENING", "COMPLIANCE AND SCRIPT ADHERENCE", "2-WAY COMMUNICATION / ENGAGE", "PRODUCT AND PROCESS KNOWLEDGE", "SELF & COMPANY INTRODUCTION / PROFILING", "PITCHING STRATEGY", "CALL CLOSURE AND CORRECT DOCUMENTATION", "OBJECTION ON CALLS HANDLING", "COMMUNICATION AND SOFT SKILLS", "URGENCY AND PRODUCT VALUE CREATION", "RAPPORT BUILD", "CLOSURE", "HANDLING OBJECTION ON PRICING"].map((label) => ({ label, max: 10 }));
+const TENURES = ["0-3 Month", "3-6 Month", "More than 6 Month"];
+const STRATS = ["No Strategy", "5 in 5", "Combo", "MPO"];
+const STATUSES = ["Follow-up", "Interested", "Not Interested", "Not Connected"];
+const CTYPES = ["New Lead", "Work to Non Work"];
+const CENTERS = ["Thane", "Malad", "Navi Mumbai", "Pune"];
+const colr = (p) => (p >= 75 ? "#0b7a5b" : p >= 50 ? "#b7791f" : "#c0392b");
+const heat = (p) => (p == null ? "#fff" : p >= 75 ? "#d7f2e6" : p >= 50 ? "#fdf0d0" : "#f9d9d5");
+const rd = (n) => Math.round(n * 10) / 10;
+const avg = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
+const wkLbl = (t) => { if (!t) return "-"; const d = new Date(t); return `Week ${Math.ceil(d.getDate() / 7)} ${d.toLocaleString("en", { month: "short" })}`; };
+const MCFG = { auto: true, trainer: "", cc: "", thr: 70 };
+const weakOf = (r) => Object.entries(r.sc).filter(([, v]) => v.s / v.max < 0.6).map(([k, v]) => `${k} (${v.s}/${v.max})`);
+const cmpOf = (r, prev) => {
+  if (!prev) return { status: "First audit" };
+  const d = r.total - prev.total;
+  const ch = Object.keys(r.sc).filter((k) => prev.sc[k]).map((k) => ({ k, d: rd((r.sc[k].s / r.sc[k].max - prev.sc[k].s / prev.sc[k].max) * 100) }));
+  return { status: d >= 2 ? "Improved" : d <= -2 ? "Declined" : "No change", delta: d, prev: prev.total, prevDate: (prev.date || "").split(",")[0], up: ch.filter((x) => x.d > 0).sort((a, b) => b.d - a.d).slice(0, 3), down: ch.filter((x) => x.d < 0).sort((a, b) => a.d - b.d).slice(0, 3) };
+};
+const fixA = (arr) => (Array.isArray(arr) ? arr : []).filter((a) => a && a.ts && a.rep).map((a) => ({ ...a, sc: a.sc || {}, mistakes: a.mistakes || [] }));
+const getPass = () => { try { return localStorage.getItem("cap") || ""; } catch { return ""; } };
+const api = (path, o = {}) => fetch(path, { ...o, headers: { ...(o.headers || {}), "x-pass": getPass(), ...(o.body ? { "content-type": "application/json" } : {}) } });
+const uniq = (a) => [...new Set(a.filter(Boolean))].sort();
+const rd1 = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
+const wr = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+
+function dl(name, rows) {
+  const csv = rows.map((r) => r.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["\ufeff" + csv], { type: "text/csv" }));
+  a.download = name; a.click();
+}
+const L = ({ items }) => <ul style={{ margin: 0, paddingLeft: 20 }}>{(items || []).map((x, i) => <li key={i}>{x}</li>)}</ul>;
+const H3 = ({ children }) => <h3 style={{ marginTop: 0 }}>{children}</h3>;
+
+function Ring({ p, on = true }) {
+  const R = 44, C = 2 * Math.PI * R, v = on ? Math.max(0, Math.min(100, p)) : 0;
+  return (
+    <div className="ring">
+      <svg width="104" height="104" viewBox="0 0 104 104"><circle cx="52" cy="52" r={R} fill="none" stroke="rgba(150,165,190,.28)" strokeWidth="9" /><circle cx="52" cy="52" r={R} fill="none" stroke={on ? colr(v) : "transparent"} strokeWidth="9" strokeLinecap="round" strokeDasharray={`${(C * v) / 100} ${C}`} /></svg>
+      <b style={{ color: "inherit" }}>{on ? `${v}%` : "-"}</b>
+    </div>
+  );
+}
+
+const PAL = ["#118dff", "#1a2a9c", "#e66c37", "#6b007b", "#e044a7", "#744ec2", "#d9b300", "#d64550"];
+function Combo({ data }) {
+  if (!data.length) return <div className="empty">No data</div>;
+  const W = 440, H = 230, T = 30, B = 34, X = 14, n = data.length, sw = (W - 2 * X) / n, bw = Math.min(64, sw * 0.62);
+  const mx = Math.max(...data.map((d) => d.n)) || 1, vs = data.map((d) => d.avg);
+  const lo = Math.max(0, Math.floor((Math.min(...vs) - 8) / 5) * 5), hi = Math.min(100, Math.ceil((Math.max(...vs) + 4) / 5) * 5);
+  const cx = (i) => X + (i + 0.5) * sw, by = (v) => H - B - (v / mx) * (H - B - T - 38), ly = (v) => H - B - ((v - lo) / (hi - lo || 1)) * (H - B - T - 10);
+  let d = "";
+  data.forEach((p, i) => { const x = cx(i), y = ly(p.avg); if (!i) d = `M${x},${y}`; else { const m = (cx(i - 1) + x) / 2; d += ` C${m},${ly(data[i - 1].avg)} ${m},${y} ${x},${y}`; } });
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto" }}>
+      {data.map((p, i) => <g key={i}><rect x={cx(i) - bw / 2} y={by(p.n)} width={bw} height={H - B - by(p.n)} fill="#118dff" rx="2" /><text x={cx(i)} y={by(p.n) - 6} textAnchor="middle" fontSize="11" fontWeight="700" fill="#14181f">{p.n}</text><text x={cx(i)} y={H - 12} textAnchor="middle" fontSize="11" fontWeight="700" fill="#344054">{p.label.length > 14 ? p.label.slice(0, 13) + "…" : p.label}</text></g>)}
+      {n > 1 && <path d={d} fill="none" stroke="#1a2a9c" strokeWidth="2.4" />}
+      {data.map((p, i) => <g key={"l" + i}><circle cx={cx(i)} cy={ly(p.avg)} r="3.4" fill="#1a2a9c" /><text x={cx(i)} y={ly(p.avg) - 8} textAnchor="middle" fontSize="10.5" fontWeight="700" fill="#1a2a9c" stroke="#fff" strokeWidth="3" paintOrder="stroke">{p.avg}%</text></g>)}
+    </svg>
+  );
+}
+function Donut({ data }) {
+  const tot = data.reduce((x, d) => x + d.n, 0);
+  if (!tot) return <div className="empty">No data</div>;
+  const dd = [...data].sort((a, b) => b.n - a.n), r = 46, C = 2 * Math.PI * r; let off = 0;
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
+      <div style={{ position: "relative", width: 132, height: 132, flex: "none" }}>
+        <svg width="132" height="132" viewBox="0 0 132 132" style={{ transform: "rotate(-90deg)" }}>
+          {dd.map((d, i) => { const len = (d.n / tot) * C, el = <circle key={d.label} cx="66" cy="66" r={r} fill="none" stroke={PAL[i % PAL.length]} strokeWidth="20" strokeDasharray={`${len} ${C - len}`} strokeDashoffset={-off} />; off += len; return el; })}
+        </svg>
+        <b style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 600 }}>{tot}</b>
+      </div>
+      <div style={{ fontSize: 13, flex: 1, minWidth: 130 }}>
+        {dd.map((d, i) => <div key={d.label} style={{ margin: "4px 0", display: "flex", alignItems: "center", gap: 8 }}><span style={{ width: 10, height: 10, borderRadius: 9, background: PAL[i % PAL.length], flex: "none" }} /><span style={{ fontWeight: 600 }}>{d.label}</span><span style={{ color: "#667085", marginLeft: "auto" }}>{d.n} ({rd((d.n / tot) * 100)}%)</span></div>)}
+      </div>
+    </div>
+  );
+}
+function HBars({ data }) {
+  if (!data.length) return <div className="empty">No data</div>;
+  return <div style={{ maxHeight: 330, overflow: "auto", paddingRight: 6 }}>{data.map((d) => <div key={d.label} className="hb"><label title={d.label}>{d.label}</label><i><s style={{ width: `${d.v}%`, background: "#118dff" }} /></i><b>{d.v}%</b></div>)}</div>;
+}
+
+function Slicer({ title, opts, sel, onChange }) {
+  const [q, setQ] = useState("");
+  const shown = q ? opts.filter((o) => o.toLowerCase().includes(q.toLowerCase())) : opts;
+  const toggle = (o) => onChange(sel.includes(o) ? sel.filter((x) => x !== o) : [...sel, o]);
+  return (
+    <div className="sl">
+      <h5>{title} <em>{sel.length ? `${sel.length} selected` : "All"}</em>{sel.length > 0 && <button className="g" style={{ marginLeft: "auto", padding: "2px 8px", fontSize: 11 }} onClick={() => onChange([])}>Clear</button>}</h5>
+      {opts.length > 10 && <input placeholder={`Search ${title.toLowerCase()}...`} value={q} onChange={(e) => setQ(e.target.value)} />}
+      <div className="bx">
+        <button className={sel.length ? "" : "on"} onClick={() => onChange([])}>All</button>
+        {shown.map((o) => <button key={o} className={sel.includes(o) ? "on" : ""} onClick={() => toggle(o)}>{o}</button>)}
+        {!opts.length && <span style={{ color: "#9fb0c8", fontSize: 12 }}>No options yet</span>}
+      </div>
+    </div>
+  );
+}
+
+function Detail({ r, info, task, onSend }) {
+  return (
+    <div>
+      <div className="c" style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ color: "#14181f" }}><Ring p={r.total} /></div>
+        <div style={{ flex: 1, minWidth: 220 }}><b>{r.rep} · {info.center} · TL: {info.tl} · {r.outcome}</b><p style={{ margin: "4px 0" }}>{r.summary}</p></div>
+      </div>
+      {r.cmp && (
+        <div className="c"><H3>Vs last call</H3>
+          {r.cmp.delta == null ? <span style={{ color: "#667085" }}>First audit for this agent. The comparison starts from the next call.</span> : (
+            <div>
+              <div style={{ marginBottom: 6 }}><span className={"tag " + (r.cmp.status === "Improved" ? "on1" : r.cmp.status === "Declined" ? "bad" : "warn")}>{r.cmp.status}</span> <b>{r.cmp.delta > 0 ? "+" : ""}{r.cmp.delta} pts</b> <span style={{ color: "#667085" }}>({r.cmp.prev}% on {r.cmp.prevDate} → {r.total}%)</span></div>
+              {r.cmp.up.length > 0 && <div style={{ color: "#0b7a5b" }}>Improved: {r.cmp.up.map((x) => `${x.k} (+${x.d}%)`).join(", ")}</div>}
+              {r.cmp.down.length > 0 && <div style={{ color: "#c0392b" }}>Dropped: {r.cmp.down.map((x) => `${x.k} (${x.d}%)`).join(", ")}</div>}
+            </div>)}
+        </div>)}
+      <div className="c"><H3>Email and training</H3>
+        <div className="row">
+          <span className={"tag " + (r.mail?.agent ? "on1" : "off1")}>Audit email: {r.mail?.agent ? "sent" : "not sent"}</span>
+          <span className={"tag " + (task?.status === "Submitted" ? "on1" : r.taskId ? "warn" : "off1")}>Trainer: {task?.status === "Submitted" ? "submitted" : r.taskId ? "waiting for trainer" : "not requested"}</span>
+        </div>
+        {(r.mail?.err || r.mail?.agentErr || r.mail?.trainerErr) && <div style={{ color: "#c0392b", fontSize: 13 }}>{r.mail.err || r.mail.agentErr || r.mail.trainerErr}</div>}
+        {task?.status === "Submitted" && <div className="f" style={{ borderLeftColor: "#0b7a5b" }}><b>{task.trainer}</b> · {task.action}{task.trainDate ? ` · trained on ${task.trainDate}` : ""}{task.nextReview ? ` · next review ${task.nextReview}` : ""}<div>{task.notes}</div></div>}
+        <div className="row noprint" style={{ marginTop: 8 }}>
+          <button className="g" onClick={() => onSend("audit")}>Email audit to agent</button>
+          {!r.taskId && <button className="g" onClick={() => onSend("trainer")}>Send to trainer</button>}
+        </div>
+      </div>
+      <div className="c" style={{ borderLeft: "4px solid #c0392b" }}><H3>Why the sale did / didn't happen</H3>{r.why}</div>
+      <div className="c"><H3>Parameter scores</H3>
+        {Object.entries(r.sc).map(([k, v]) => { const p = (v.s / v.max) * 100; return (
+          <div className="bar" key={k}><label>{k}</label><i><s style={{ width: `${p}%`, background: colr(p) }} /></i><b>{v.s}/{v.max}</b></div>); })}
+      </div>
+      <div className="c"><H3>Mistakes and how to fix them</H3>
+        {(r.mistakes || []).map((m, i) => <div className="f" key={i}><b>{m.mistake}</b><div className="q">"{m.quote}"</div><div>Say it like this: {m.fix}</div></div>)}</div>
+      <div className="c"><H3>Compliance flags</H3>
+        {!(r.flags || []).length && <span style={{ color: "#0b7a5b" }}>No major issues found.</span>}
+        {(r.flags || []).map((f, i) => <div className="f" key={i}><b>{f.issue}</b> ({f.severity})<div className="q">"{f.quote}"</div><div>Fix: {f.fix}</div></div>)}</div>
+      <div className="c"><H3>Objections</H3>
+        {!(r.objections || []).length && <span style={{ color: "#667085" }}>No objections in this call.</span>}
+        {(r.objections || []).map((o, i) => <div className="f" key={i} style={{ borderLeftColor: o.handled ? "#0b7a5b" : "#c0392b" }}><b>{o.objection}</b> <span className={"tag " + (o.handled ? "on1" : "bad")}>{o.handled ? "Handled" : "Not handled"}</span>{o.better && <div>Better reply: {o.better}</div>}</div>)}</div>
+      <div className="c"><H3>What went well</H3><L items={r.strengths} /></div>
+      <div className="c"><H3>Missed opportunities</H3><L items={r.missed} /></div>
+      <div className="c" style={{ borderLeft: "4px solid #0b7a5b" }}><H3>Steps to improve sales</H3><L items={r.tips} /></div>
+    </div>
+  );
+}
+
+function Home() {
+  const [tab, setTab] = useState("dash");
+  const [params, setParams] = useState(DEFAULT);
+  const [centers, setCenters] = useState(CENTERS);
+  const [amap, setAmap] = useState([]);
+  const [hist, setHist] = useState([]);
+  const [cur, setCur] = useState(null);
+  const [files, setFiles] = useState([]);
+  const [rep, setRep] = useState("");
+  const [callType, setCallType] = useState("New Lead"), [strategy, setStrategy] = useState("No Strategy"), [cstatus, setCstatus] = useState("Follow-up");
+  const [fw, setFw] = useState("All"), [fo, setFo] = useState("All"), [fn, setFn] = useState("All"), [fg, setFg] = useState("All"), [fct, setFct] = useState("All");
+  const [mcfg, setMcfg] = useState(MCFG), [tasks, setTasks] = useState([]);
+  const [fc, setFc] = useState([]), [ft, setFt] = useState([]), [fa, setFa] = useState([]), [fs, setFs] = useState("Active");
+  const [srv, setSrv] = useState(false), [locked, setLocked] = useState(false), [pass, setPass] = useState(""), [ready, setReady] = useState(false), [more, setMore] = useState(60);
+  const timers = useRef({});
+  const [from, setFrom] = useState(""), [to, setTo] = useState("");
+  const [status, setStatus] = useState(""), [err, setErr] = useState(""), [busy, setBusy] = useState(false);
+  const [nc, setNc] = useState(""), [na, setNa] = useState({ name: "", center: "", tl: "", oo: "", tenure: TENURES[0], email: "", tlEmail: "" }), [bulk, setBulk] = useState("");
+
+  const KEYMAP = { params: "params2", centers: "centers", amap: "amap", mcfg: "mcfg2" };
+  const persist = (k, v) => {
+    if (!srv) { wr(k, v); return; }
+    clearTimeout(timers.current[k]);
+    timers.current[k] = setTimeout(() => { api("/api/store", { method: "POST", body: JSON.stringify({ action: "set", key: KEYMAP[k], value: v }) }).catch(() => {}); }, 500);
+  };
+  const saveAudit = (a) => { if (srv) api("/api/store", { method: "POST", body: JSON.stringify({ action: "audit", audit: a }) }).catch(() => {}); };
+  const load = async () => {
+    let j = null;
+    try {
+      const r = await api("/api/store");
+      if (r.status === 401) { setLocked(true); setReady(true); return; }
+      j = await r.json();
+    } catch {}
+    setLocked(false);
+    if (j && j.configured) {
+      setSrv(true);
+      const push = (k, v) => api("/api/store", { method: "POST", body: JSON.stringify({ action: "set", key: KEYMAP[k], value: v }) }).catch(() => {});
+      const pick = (k, dflt) => { const sv = j[KEYMAP[k]]; if (sv != null) return sv; const lv = rd1(k, null); if (lv != null) { push(k, lv); return lv; } return dflt; };
+      setParams(pick("params", DEFAULT)); setCenters(pick("centers", CENTERS)); setAmap(pick("amap", [])); setMcfg(pick("mcfg", MCFG));
+      let au = fixA(j.audits);
+      const la = fixA(rd1("audits", []));
+      if (!au.length && la.length) { api("/api/store", { method: "POST", body: JSON.stringify({ action: "audits", audits: la }) }).catch(() => {}); au = la; }
+      setHist(au);
+    } else {
+      setSrv(false);
+      setParams(rd1("params", DEFAULT)); setHist(fixA(rd1("audits", []))); setCenters(rd1("centers", CENTERS)); setAmap(rd1("amap", [])); setMcfg(rd1("mcfg", MCFG));
+    }
+    setReady(true);
+    loadTasks();
+  };
+  const refreshAudits = async () => {
+    try {
+      const r = await api("/api/store");
+      if (!r.ok) return;
+      const j = await r.json();
+      if (j.configured && Array.isArray(j.audits)) setHist(fixA(j.audits));
+    } catch {}
+  };
+  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (!srv || locked || tab !== "dash") return;
+    refreshAudits(); loadTasks();
+    const t = setInterval(() => { if (!busy) { refreshAudits(); loadTasks(); } }, 45000);
+    return () => clearInterval(t);
+  }, [srv, locked, tab]);
+  const saveParams = (p) => { setParams(p); persist("params", p); };
+  const saveCenters = (c) => { setCenters(c); persist("centers", c); };
+  const saveMap = (m) => { setAmap(m); persist("amap", m); };
+  const unlock = () => { try { localStorage.setItem("cap", pass); } catch {} setPass(""); setReady(false); load(); };
+
+  const info = (h) => amap.find((a) => a.name.toLowerCase() === h.rep.toLowerCase()) || { name: h.rep, center: h.center || "-", tl: h.tl || "-", oo: h.oo || "-", tenure: h.tenure || "-", active: true };
+  const activeAgents = amap.filter((a) => a.active);
+
+  const addAgent = () => {
+    const name = na.name.trim();
+    if (!name) return;
+    if (amap.some((a) => a.name.toLowerCase() === name.toLowerCase())) { alert("This agent already exists."); return; }
+    saveMap([...amap, { name, center: na.center || centers[0] || "", tl: na.tl.trim(), oo: na.oo.trim(), tenure: na.tenure, email: na.email.trim(), tlEmail: na.tlEmail.trim(), active: true }]);
+    setNa({ name: "", center: na.center, tl: na.tl, oo: na.oo, tenure: na.tenure, email: "", tlEmail: na.tlEmail });
+  };
+  const importBulk = () => {
+    let m = [...amap];
+    bulk.split("\n").forEach((line) => {
+      const [c, n, t, s, o, tn, em, tem] = line.split(/\t|,/).map((x) => (x || "").trim());
+      if (!n || /^agent/i.test(n)) return;
+      const act = !/^(inactive|no|0|false)/i.test(s || "");
+      const i = m.findIndex((a) => a.name.toLowerCase() === n.toLowerCase());
+      const row = { name: n, center: c, tl: t, active: act, oo: o || "", tenure: tn || "", email: em || "", tlEmail: tem || "" };
+      if (i >= 0) m[i] = row; else m.push(row);
+      if (c && !centers.includes(c)) { centers.push(c); }
+    });
+    saveCenters([...centers]); saveMap(m); setBulk("");
+  };
+
+  const saveCfg = (c) => { setMcfg(c); persist("mcfg", c); };
+  const loadTasks = async () => { try { const r = await api("/api/training"); if (r.ok) setTasks((await r.json()).tasks || []); } catch {} };
+  const needsTrain = (r) => mcfg.trainer.trim() && r.total < Number(mcfg.thr || 0);
+  const send = async (r, mode) => {
+    const i = info(r), em = (x) => (x || "").split(/[,;\s]+/).filter((e) => e.includes("@"));
+    try {
+      const res = await api("/api/notify", { method: "POST", body: JSON.stringify({ mode, audit: { ...r, weak: weakOf(r) }, agentEmail: i.email || "", tlEmail: i.tlEmail || "", trainerEmails: em(mcfg.trainer), ccEmails: em(mcfg.cc) }) });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error || "Email failed");
+      const m = { ...(r.mail || {}), err: "" };
+      if (j.agent) { m.agent = j.agent.ok; m.agentErr = j.agent.error || ""; }
+      if (j.trainer) { m.trainer = j.trainer.ok; m.trainerErr = j.trainer.error || ""; }
+      return { ...r, mail: m, taskId: j.taskId || r.taskId };
+    } catch (e) { return { ...r, mail: { ...(r.mail || {}), err: e.message } }; }
+  };
+  const manual = async (r, mode) => { setBusy(true); const u = await send(r, mode); const nh = hist.map((x) => (x.ts === r.ts ? u : x)); setHist(nh); if (srv) saveAudit(u); else wr("audits", nh); setCur(u); setBusy(false); loadTasks(); };
+
+  const run = async () => {
+    setErr("");
+    const ag = amap.find((a) => a.name === rep);
+    if (!ag) { setErr("Select an agent first. Add agents under Admin Settings > Agent Mapping."); return; }
+    setBusy(true);
+    let h = hist, last = null;
+    if (srv) { try { const rr = await api("/api/store"); const jj = await rr.json(); if (jj.audits) { h = fixA(jj.audits); setHist(h); } } catch {} }
+    for (const f of files) {
+      try {
+        setStatus(`${f.name}: uploading...`);
+        const blob = await upload(`calls/${Date.now()}-${f.name}`, f, { access: "public", handleUploadUrl: "/api/upload", clientPayload: getPass() });
+        setStatus(`${f.name}: transcribing and auditing (1-3 min)...`);
+        const res = await api("/api/audit", { method: "POST", body: JSON.stringify({ url: blob.url, callType, params }) });
+        const j = await res.json();
+        if (!res.ok) throw new Error(j.error);
+        const sc = {}; let s = 0, m = 0;
+        params.forEach((p) => { const v = Math.max(0, Math.min(p.max, Number(j.result.scores?.[p.label]) || 0)); sc[p.label] = { s: v, max: p.max }; s += v; m += p.max; });
+        let r = { ...j.result, sc, total: m ? Math.round((s / m) * 100) : 0, rep: ag.name, center: ag.center, tl: ag.tl, file: f.name, type: callType, strategy, cstatus, oo: ag.oo || "", tenure: ag.tenure || "", ts: Date.now(), date: new Date().toLocaleString() };
+        delete r.scores;
+        r.cmp = cmpOf(r, h.find((x) => x.rep === ag.name));
+        if (mcfg.auto) { setStatus(`${f.name}: sending emails...`); r = await send(r, needsTrain(r) ? "both" : "audit"); }
+        h = srv ? [r, ...h] : [r, ...h].slice(0, 300); setHist(h); last = r; if (srv) saveAudit(r); else wr("audits", h); loadTasks();
+      } catch (e) { setErr(`${f.name}: ${e.message}`); }
+    }
+    setStatus(""); setBusy(false); setFiles([]);
+    if (last) { setTab("dash"); setCur(last); }
+  };
+
+  const inC = (a) => !fc.length || fc.includes(a.center);
+  const tlOpts = uniq(amap.filter(inC).map((a) => a.tl));
+  const ftE = ft.filter((x) => tlOpts.includes(x));
+  const inT = (a) => inC(a) && (!ftE.length || ftE.includes(a.tl));
+  const agOpts = uniq([...amap.filter(inT).map((a) => a.name), ...(!fc.length && !ftE.length ? hist.map((h) => h.rep) : [])]);
+  const faE = fa.filter((x) => agOpts.includes(x));
+  const agFor = (c, t) => uniq([...amap.filter((a) => (!c.length || c.includes(a.center)) && (!t.length || t.includes(a.tl))).map((a) => a.name), ...(!c.length && !t.length ? hist.map((h) => h.rep) : [])]);
+  const onCenter = (c) => {
+    setFc(c);
+    const tls = uniq(amap.filter((a) => !c.length || c.includes(a.center)).map((a) => a.tl)), nt = ft.filter((x) => tls.includes(x));
+    setFt(nt); const ag = agFor(c, nt); setFa(fa.filter((x) => ag.includes(x)));
+  };
+  const onTl = (t) => { setFt(t); const ag = agFor(fc, t); setFa(fa.filter((x) => ag.includes(x))); };
+  const list = hist.filter((h) => {
+    const i = info(h);
+    return (!fc.length || fc.includes(i.center)) && (!ftE.length || ftE.includes(i.tl)) && (!faE.length || faE.includes(h.rep)) &&
+      (fs === "All" || (fs === "Active" ? i.active : !i.active)) &&
+      (fw === "All" || wkLbl(h.ts) === fw) && (fo === "All" || (i.oo || "-") === fo) && (fn === "All" || (i.tenure || "-") === fn) && (fg === "All" || (h.strategy || "-") === fg) && (fct === "All" || (h.type || "-") === fct) &&
+      (!from || (h.ts && h.ts >= new Date(from).getTime())) && (!to || (h.ts && h.ts <= new Date(to).getTime() + 864e5 - 1));
+  });
+  const rows = uniq(list.map((h) => h.rep)).map((a) => {
+    const au = list.filter((h) => h.rep === a), i = info(au[0]);
+    return { a, center: i.center, tl: i.tl, active: i.active, n: au.length, tot: Math.round(avg(au.map((h) => h.total))),
+      cells: params.map((p) => avg(au.filter((h) => h.sc[p.label]).map((h) => h.sc[p.label].s / h.sc[p.label].max))) };
+  }).sort((x, y) => (x.center + x.tl + x.a).localeCompare(y.center + y.tl + y.a));
+  const colAvg = params.map((_, i) => avg(rows.map((r) => r.cells[i]).filter((x) => x != null)));
+  const avgAll = list.length ? rd(avg(list.map((h) => h.total))) : 0;
+  const flags = list.reduce((x, h) => x + (h.flags || []).length, 0);
+  const grp = (key) => uniq(rows.map((r) => r[key])).map((g) => { const rr = rows.filter((r) => r[key] === g); return { g, agents: rr.length, n: rr.reduce((x, r) => x + r.n, 0), tot: Math.round(avg(rr.map((r) => r.tot))) }; });
+  const allCenters = uniq([...centers, ...amap.map((a) => a.center)]);
+  const allTls = uniq(amap.map((a) => a.tl));
+  const allAgents = uniq([...amap.map((a) => a.name), ...hist.map((h) => h.rep)]);
+  const by = (key, cmp) => { const g = {}; list.forEach((h) => { const k = key(h) || "-"; (g[k] = g[k] || []).push(h); }); return Object.keys(g).map((k) => ({ label: k, n: g[k].length, avg: rd(avg(g[k].map((h) => h.total))), t: Math.min(...g[k].map((h) => h.ts || 0)) })).sort(cmp || ((a, b) => a.label.localeCompare(b.label))); };
+  const ti = (l) => { const i = TENURES.indexOf(l); return i < 0 ? 99 : i; };
+  const wkData = by((h) => wkLbl(h.ts), (a, b) => a.t - b.t), tlData = by((h) => info(h).tl), tnData = by((h) => info(h).tenure, (a, b) => ti(a.label) - ti(b.label));
+  const stData = by((h) => h.cstatus), ctData = by((h) => h.type), sgData = by((h) => h.strategy);
+  const imData = by((h) => h.cmp && h.cmp.status), lt = list.filter((h) => h.taskId);
+  const pct = (h, f) => { const e = Object.entries(h.sc).filter(([k]) => f(k)); const m = e.reduce((x, [, v]) => x + v.max, 0); return m ? (e.reduce((x, [, v]) => x + v.s, 0) / m) * 100 : null; };
+  const avgC = (f) => { const a = list.map((h) => pct(h, f)).filter((x) => x != null); return a.length ? rd(avg(a)) : null; };
+  const comp = avgC((k) => /COMPLIANCE/i.test(k)), clos = avgC((k) => /^CLOSURE$/i.test(k.trim()));
+  const pw = params.map((p) => { const a = list.filter((h) => h.sc[p.label]).map((h) => (h.sc[p.label].s / h.sc[p.label].max) * 100); return { label: p.label, v: a.length ? rd(avg(a)) : null }; }).filter((x) => x.v != null).sort((a, b) => b.v - a.v);
+  const allWeeks = uniq(hist.map((h) => wkLbl(h.ts))), allOos = uniq(amap.map((a) => a.oo));
+  const stl = (a) => (a.active ? "tag on1" : "tag off1");
+
+  if (!ready) return <div className="lock">Loading...</div>;
+  if (locked) return (
+    <div className="lock">
+      <h3 style={{ marginTop: 0 }}>Sales Call Audit</h3>
+      <p style={{ color: "#667085", marginTop: 0 }}>Enter the password to open the dashboard.</p>
+      <input type="password" autoFocus style={{ width: "100%" }} placeholder="Password" value={pass} onChange={(e) => setPass(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && pass) unlock(); }} />
+      {getPass() && <p style={{ color: "#c0392b", fontSize: 13, margin: "8px 0 0" }}>Wrong password. Try again.</p>}
+      <div style={{ marginTop: 12 }}><button disabled={!pass} onClick={unlock}>Open</button></div>
+    </div>
+  );
+
+  return (
+    <div>
+      <header className="top">
+        <div className="brand">
+          <svg width="38" height="38" viewBox="0 0 38 38"><rect width="38" height="38" rx="10" fill="#0b7a5b" /><g fill="#fff"><rect x="7" y="16" width="3.6" height="6" rx="1.8" /><rect x="13" y="11" width="3.6" height="16" rx="1.8" /><rect x="19" y="7" width="3.6" height="24" rx="1.8" /><rect x="25" y="13" width="3.6" height="12" rx="1.8" /><rect x="31" y="17" width="3.6" height="4" rx="1.8" /></g></svg>
+          <div><b>Sales Call Audit</b><span>Call quality by agent, TL and center</span></div>
+        </div>
+        <div className="tabs">
+          {[["dash", "Dashboard"], ["new", "New Audit"], ["set", "Admin Settings"]].map(([k, v]) => <button key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{v}</button>)}
+        </div>
+      </header>
+      <div className="main">
+      {!srv && <div className="warn">Shared database is not connected. Data is saved only in this browser, so other people will not see your audits. Connect Upstash Redis in Vercel (see README) and redeploy.</div>}
+
+      {tab === "new" && (
+        <div className="c">
+          <H3>Upload call recordings</H3>
+          {!activeAgents.length && <p style={{ color: "#c0392b" }}>No active agents yet. Add agents under Admin Settings &gt; Agent Mapping first.</p>}
+          <div className="row">
+            <select style={{ flex: 1, minWidth: 200 }} value={rep} onChange={(e) => setRep(e.target.value)}>
+              <option value="">Select agent...</option>
+              {activeAgents.map((a) => <option key={a.name} value={a.name}>{a.name} ({a.center} / TL: {a.tl || "-"})</option>)}
+            </select>
+            <select value={callType} onChange={(e) => setCallType(e.target.value)}>{CTYPES.map((x) => <option key={x}>{x}</option>)}</select>
+            <select value={strategy} onChange={(e) => setStrategy(e.target.value)}>{STRATS.map((x) => <option key={x}>{x}</option>)}</select>
+            <select value={cstatus} onChange={(e) => setCstatus(e.target.value)}>{STATUSES.map((x) => <option key={x}>{x}</option>)}</select>
+          </div>
+          <input type="file" accept="audio/*" multiple onChange={(e) => setFiles([...e.target.files])} />
+          <div style={{ marginTop: 10 }}><button disabled={busy || !files.length} onClick={run}>{busy ? "Running..." : `Run audit${files.length ? ` (${files.length})` : ""}`}</button></div>
+          {status && <p style={{ color: "#667085" }}>{status}</p>}
+          {err && <p style={{ color: "#c0392b" }}>{err}</p>}
+        </div>
+      )}
+
+      {tab === "set" && (
+        <div>
+          <div className="c">
+            <H3>Centers</H3>
+            <div className="row">
+              {centers.map((c) => <span key={c} className="tag on1" style={{ padding: "5px 10px" }}>{c} <a style={{ cursor: "pointer", marginLeft: 6 }} onClick={() => saveCenters(centers.filter((x) => x !== c))}>✕</a></span>)}
+            </div>
+            <div className="row"><input placeholder="New center (e.g. Andheri)" value={nc} onChange={(e) => setNc(e.target.value)} /><button onClick={() => { const v = nc.trim(); if (v && !centers.includes(v)) saveCenters([...centers, v]); setNc(""); }}>+ Add center</button></div>
+          </div>
+
+          <div className="c">
+            <H3>Agent mapping (Center, Agent, TL, Active/Inactive)</H3>
+            <div className="row noprint">
+              <input placeholder="Agent Name" value={na.name} onChange={(e) => setNa({ ...na, name: e.target.value })} />
+              <select value={na.center} onChange={(e) => setNa({ ...na, center: e.target.value })}><option value="">Select center</option>{centers.map((c) => <option key={c}>{c}</option>)}</select>
+              <input placeholder="TL Name" value={na.tl} onChange={(e) => setNa({ ...na, tl: e.target.value })} />
+              <input placeholder="Onboarding Officer" value={na.oo} onChange={(e) => setNa({ ...na, oo: e.target.value })} />
+              <select value={na.tenure} onChange={(e) => setNa({ ...na, tenure: e.target.value })}>{TENURES.map((t) => <option key={t}>{t}</option>)}</select>
+              <input placeholder="Agent email" value={na.email} onChange={(e) => setNa({ ...na, email: e.target.value })} />
+              <input placeholder="TL email" value={na.tlEmail} onChange={(e) => setNa({ ...na, tlEmail: e.target.value })} />
+              <button onClick={addAgent}>+ Add agent</button>
+            </div>
+            <div className="sc"><table className="t"><thead><tr><th className="l">Agent Name</th><th>Center</th><th>TL Name</th><th>Onboarding Officer</th><th>Tenure</th><th>Agent Email</th><th>TL Email</th><th>Status</th><th></th></tr></thead><tbody>
+              {amap.map((a, i) => (
+                <tr key={a.name}>
+                  <td className="l"><input value={a.name} onChange={(e) => saveMap(amap.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} /></td>
+                  <td><select value={a.center} onChange={(e) => saveMap(amap.map((x, j) => (j === i ? { ...x, center: e.target.value } : x)))}>{allCenters.map((c) => <option key={c}>{c}</option>)}</select></td>
+                  <td><input value={a.tl} onChange={(e) => saveMap(amap.map((x, j) => (j === i ? { ...x, tl: e.target.value } : x)))} /></td>
+                  <td><input value={a.oo || ""} onChange={(e) => saveMap(amap.map((x, j) => (j === i ? { ...x, oo: e.target.value } : x)))} /></td>
+                  <td><select value={a.tenure || ""} onChange={(e) => saveMap(amap.map((x, j) => (j === i ? { ...x, tenure: e.target.value } : x)))}><option value="">-</option>{TENURES.map((t) => <option key={t}>{t}</option>)}</select></td>
+                  <td><input value={a.email || ""} onChange={(e) => saveMap(amap.map((x, j) => (j === i ? { ...x, email: e.target.value } : x)))} /></td>
+                  <td><input value={a.tlEmail || ""} onChange={(e) => saveMap(amap.map((x, j) => (j === i ? { ...x, tlEmail: e.target.value } : x)))} /></td>
+                  <td><select value={a.active ? "1" : "0"} onChange={(e) => saveMap(amap.map((x, j) => (j === i ? { ...x, active: e.target.value === "1" } : x)))}><option value="1">Active</option><option value="0">Inactive</option></select></td>
+                  <td><button className="g" onClick={() => saveMap(amap.filter((_, j) => j !== i))}>Remove</button></td>
+                </tr>))}
+              {!amap.length && <tr><td colSpan={9} style={{ color: "#667085" }}>No agents yet. Add one above or paste from Excel below.</td></tr>}
+            </tbody></table></div>
+            <p style={{ marginBottom: 4 }}><b>Paste from Excel in bulk</b> <span style={{ color: "#667085", fontSize: 13 }}>(columns: Center, Agent Name, TL Name, Status, Onboarding Officer, Tenure, Agent Email, TL Email. write Active or Inactive in Status)</span></p>
+            <textarea style={{ width: "100%", minHeight: 90, boxSizing: "border-box" }} value={bulk} onChange={(e) => setBulk(e.target.value)} placeholder={"Thane\tRahul Sharma\tAmit Patil\tActive\tSujit Yadav\t0-3 Month\trahul@company.com\tamit@company.com\nPune\tNeha Joshi\tSunil More\tInactive\tRiyaz Khan\t3-6 Month\tneha@company.com\tsunil@company.com"} />
+            <div className="row"><button onClick={importBulk} disabled={!bulk.trim()}>Import</button></div>
+          </div>
+
+          <div className="c">
+            <H3>Email and training alerts</H3>
+            <p style={{ color: "#667085", marginTop: 0 }}>Every audit is emailed to the agent (TL on the same mail). If the score is below the alert limit, the trainer gets a link to submit a training plan, and the submission shows on the dashboard.</p>
+            <div className="row"><label style={{ display: "flex", gap: 8, alignItems: "center" }}><input type="checkbox" checked={mcfg.auto} onChange={(e) => saveCfg({ ...mcfg, auto: e.target.checked })} /> Send emails automatically after each audit</label></div>
+            <div className="row">
+              <input style={{ flex: 1, minWidth: 220 }} placeholder="Trainer email(s), comma separated" value={mcfg.trainer} onChange={(e) => saveCfg({ ...mcfg, trainer: e.target.value })} />
+              <input style={{ flex: 1, minWidth: 220 }} placeholder="CC email(s), e.g. manager" value={mcfg.cc} onChange={(e) => saveCfg({ ...mcfg, cc: e.target.value })} />
+              <label>Alert trainer below <input type="number" min="0" max="100" style={{ width: 70 }} value={mcfg.thr} onChange={(e) => saveCfg({ ...mcfg, thr: e.target.value })} /> %</label>
+            </div>
+            <p style={{ color: "#667085", fontSize: 13, marginBottom: 0 }}>Needs MAIL_USER and MAIL_PASS (Gmail app password), or RESEND_API_KEY, in your Vercel environment variables.</p>
+          </div>
+          <div className="c">
+            <H3>Scoring parameters</H3>
+            <p style={{ color: "#667085", marginTop: 0 }}>Rename a parameter, choose max points (5 or 10), or add a new one. New audits will use these settings.</p>
+            {params.map((p, i) => (
+              <div className="row" key={i}>
+                <input style={{ flex: 1, minWidth: 200 }} value={p.label} onChange={(e) => saveParams(params.map((x, j) => (j === i ? { ...x, label: e.target.value.toUpperCase() } : x)))} />
+                <select value={p.max} onChange={(e) => saveParams(params.map((x, j) => (j === i ? { ...x, max: Number(e.target.value) } : x)))}><option value={5}>5 points</option><option value={10}>10 points</option></select>
+                <button className="g" onClick={() => saveParams(params.filter((_, j) => j !== i))}>Remove</button>
+              </div>
+            ))}
+            <div className="row"><button onClick={() => saveParams([...params, { label: "NEW PARAMETER", max: 10 }])}>+ Add parameter</button><button className="g" onClick={() => saveParams(DEFAULT)}>Reset to default</button></div>
+            <p style={{ color: "#667085", fontSize: 13 }}>{srv ? "Settings are saved in the shared database." : "Database not connected: settings are saved in this browser only."}</p>
+          </div>
+        </div>
+      )}
+
+      {tab === "dash" && (
+        <div>
+          <div className="band">
+            <div className="bt"><h2>Call Quality Audit Dashboard</h2><span>{!fc.length ? "ALL CENTRES" : fc.join(", ").toUpperCase()}  |  Executive summary</span></div>
+            <div className="slg noprint">
+              <Slicer title="Center" opts={allCenters} sel={fc} onChange={onCenter} />
+              <Slicer title="Team Leader" opts={tlOpts} sel={ftE} onChange={onTl} />
+              <Slicer title="Agent" opts={agOpts} sel={faE} onChange={setFa} />
+            </div>
+            <div className="flt noprint">
+              {[["Weekly", fw, setFw, allWeeks], ["Onboarding Officer", fo, setFo, allOos], ["Tenure", fn, setFn, TENURES], ["Strategy", fg, setFg, STRATS], ["Types of Calls", fct, setFct, CTYPES]].map(([l, v, f, o]) => <label key={l}>{l}<select value={v} onChange={(e) => f(e.target.value)}><option value="All">All</option>{o.map((x) => <option key={x}>{x}</option>)}</select></label>)}
+              <label>Agent status<select value={fs} onChange={(e) => setFs(e.target.value)}><option>Active</option><option>Inactive</option><option value="All">Active + Inactive</option></select></label>
+              <label>From<input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></label>
+              <label>To<input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></label>
+            </div>
+          </div>
+          <div className="kp">
+            {[["TOTAL AUDITS", list.length, "#2f6bff"], ["AVG QUALITY SCORE", list.length ? avgAll + "%" : "-", "#10b981"], ["AVG POINTS (OUT OF 100)", list.length ? avgAll : "-", "#f59e0b"], ["AVG COMPLIANCE", comp == null ? "-" : comp + "%", "#8b5cf6"], ["AVG CLOSURE", clos == null ? "-" : clos + "%", "#06b6d4"]].map(([a, b, col]) => <div key={a} className="kc" style={{ borderColor: col }}><span>{a}</span><b style={{ color: col }}>{b}</b></div>)}
+          </div>
+          <div className="gr">
+            <div className="ch"><h4>Weekly Audits &amp; Avg Score</h4><Combo data={wkData} /></div>
+            <div className="ch"><h4>Team Leader: Audits &amp; Avg Score</h4><Combo data={tlData} /></div>
+            <div className="ch"><h4>Status of Call</h4><Donut data={stData} /></div>
+            <div className="ch"><h4>Parameter-wise Avg Score</h4><HBars data={pw} /></div>
+            <div className="ch"><h4>Tenure: Audits &amp; Avg Score</h4><Combo data={tnData} /></div>
+            <div className="stk">
+              <div className="ch"><h4>Types of Calls</h4><Donut data={ctData} /></div>
+              <div className="ch"><h4>Strategy Used</h4><Donut data={sgData} /></div>
+            </div>
+          </div>
+          <div className="gr">
+            <div className="ch"><h4>Improvement vs Last Call</h4><Donut data={imData} /></div>
+            <div className="ch" style={{ gridColumn: "span 2" }}>
+              <div className="row"><h4 style={{ margin: 0, flex: 1 }}>Training Follow-ups</h4><button className="g" onClick={loadTasks}>Refresh</button></div>
+              {lt.length ? (
+                <div className="sc"><table className="t"><thead><tr><th>Date</th><th className="l">Agent</th><th>Center</th><th>Score</th><th>Status</th><th className="l">Trainer</th><th className="l">Action taken</th><th className="l">Notes</th><th>Next review</th><th></th></tr></thead><tbody>
+                  {lt.map((h) => { const t = tasks.find((x) => x.id === h.taskId) || {}; return (
+                    <tr key={h.ts}><td>{(h.date || "").split(",")[0]}</td><td className="l"><b>{h.rep}</b></td><td>{info(h).center}</td><td>{h.total}%</td><td><span className={"tag " + (t.status === "Submitted" ? "on1" : "warn")}>{t.status || "Pending"}</span></td><td className="l">{t.trainer || "-"}</td><td className="l">{t.action || "-"}</td><td className="l">{t.notes || "-"}</td><td>{t.nextReview || "-"}</td><td><button className="g" onClick={() => navigator.clipboard && navigator.clipboard.writeText(location.origin + "/training.html?id=" + h.taskId)}>Copy link</button></td></tr>); })}
+                </tbody></table></div>
+              ) : <div className="empty">No training follow-ups yet. When an audit scores below the alert limit, the trainer is emailed a link and their submission shows here.</div>}
+            </div>
+          </div>
+          <div className="c">
+            <div className="row">
+              <h3 style={{ margin: 0, flex: 1 }}>Agent-wise report</h3>
+              <button className="g" disabled={!rows.length} onClick={() => dl("agent-report.csv", [["Center", "TL Name", "Agent Name", "Status", "Audit Count", ...params.map((p) => p.label), "Total %"], ...rows.map((r) => [r.center, r.tl, r.a, r.active ? "Active" : "Inactive", r.n, ...r.cells.map((c, i) => (c == null ? "" : rd(c * params[i].max))), r.tot])])}>Report Download (Excel)</button>
+              <button className="g" disabled={!list.length} onClick={() => dl("audit-wise-report.csv", [["Date", "Center", "TL Name", "Agent Name", "File", "Call Type", "Outcome", "Total %", ...params.map((p) => p.label), "Why"], ...list.map((h) => { const i = info(h); return [h.date, i.center, i.tl, h.rep, h.file, h.type, h.outcome, h.total, ...params.map((p) => h.sc[p.label]?.s ?? ""), h.why]; })])}>Audit-wise Download</button>
+              <button className="g" onClick={() => window.print()}>Print / PDF</button>
+            </div>
+            {!rows.length ? <div className="empty">No audits match these filters. Upload a call from the "New Audit" tab or change the filters.</div> : (
+              <div className="sc"><table className="t"><thead><tr><th className="l">Center</th><th className="l">TL Name</th><th className="l">Agent Name</th><th>Status</th><th>Audit Count</th>{params.map((p) => <th key={p.label}>{p.label}<br />(/{p.max})</th>)}<th>Total %</th></tr></thead>
+                <tbody>
+                  {rows.map((r) => <tr key={r.a}><td className="l">{r.center}</td><td className="l">{r.tl}</td><td className="l"><b>{r.a}</b></td><td><span className={stl(r)}>{r.active ? "Active" : "Inactive"}</span></td><td>{r.n}</td>{r.cells.map((c, i) => <td key={i} style={{ background: heat(c == null ? null : c * 100) }}>{c == null ? "-" : rd(c * params[i].max)}</td>)}<td style={{ background: heat(r.tot), fontWeight: 700 }}>{r.tot}%</td></tr>)}
+                  <tr><td className="l" colSpan={3}><b>TEAM AVERAGE</b></td><td></td><td><b>{list.length}</b></td>{colAvg.map((c, i) => <td key={i} style={{ fontWeight: 700 }}>{c == null ? "-" : rd(c * params[i].max)}</td>)}<td style={{ fontWeight: 700 }}>{avgAll}%</td></tr>
+                </tbody></table></div>
+            )}
+          </div>
+          {rows.length > 0 && (
+            <div className="cols">
+              {[["Center-wise", "center"], ["TL-wise", "tl"]].map(([t, k]) => (
+                <div className="c" key={k}><H3>{t} summary</H3>
+                  <table className="t"><thead><tr><th className="l">{k === "center" ? "Center" : "TL Name"}</th><th>Agents</th><th>Audits</th><th>Avg %</th></tr></thead>
+                    <tbody>{grp(k).map((g) => <tr key={g.g}><td className="l">{g.g}</td><td>{g.agents}</td><td>{g.n}</td><td style={{ background: heat(g.tot), fontWeight: 700 }}>{g.tot}%</td></tr>)}</tbody></table>
+                </div>))}
+              <div className="c"><H3>Parameter-wise team average</H3>
+                {params.map((p, i) => { const v = colAvg[i] == null ? 0 : colAvg[i] * 100; return <div className="bar" key={p.label}><label>{p.label}</label><i><s style={{ width: `${v}%`, background: colr(v) }} /></i><b>{Math.round(v)}%</b></div>; })}
+              </div>
+            </div>
+          )}
+          <div className="c noprint"><div className="row"><h3 style={{ margin: 0, flex: 1 }}>Call audits <span style={{ color: "#667085", fontWeight: 600, fontSize: 13 }}>({list.length}) &middot; click a call to see the mistakes</span></h3></div>
+            {!list.length && <div className="empty">No audits match these filters yet.</div>}
+            <div className="cg">
+              {list.slice(0, more).map((h) => {
+                const mine = hist.filter((x) => x.rep === h.rep).sort((x, y) => (x.ts || 0) - (y.ts || 0));
+                const n = mine.findIndex((x) => x.ts === h.ts) + 1, i = info(h), nm = (h.mistakes || []).length;
+                return (
+                  <div key={h.ts} className="cd" style={{ borderLeftColor: colr(h.total) }} onClick={() => setCur(h)}>
+                    <div className="h"><div><b>{h.rep}</b><small>{i.center} &middot; TL: {i.tl || "-"}</small></div><span className="score" style={{ background: colr(h.total) }}>{h.total}%</span></div>
+                    <div className="m"><span>Audit {n} of {mine.length}</span><span style={{ color: nm ? "#c0392b" : "#0b7a5b" }}>{nm} mistake{nm === 1 ? "" : "s"}</span><span>{h.outcome}</span>{h.cmp && h.cmp.delta != null && <span style={{ color: h.cmp.delta > 0 ? "#0b7a5b" : h.cmp.delta < 0 ? "#c0392b" : "#667085" }}>{h.cmp.delta > 0 ? "▲" : h.cmp.delta < 0 ? "▼" : "–"} {Math.abs(h.cmp.delta)} pts</span>}</div>
+                    <small style={{ marginTop: 8 }}>{(h.date || "").split(",")[0]} &middot; {h.type}{h.file ? " · " + h.file : ""}</small>
+                  </div>);
+              })}
+            </div>
+            {list.length > more && <div className="row" style={{ marginTop: 12, justifyContent: "center" }}><button className="g" onClick={() => setMore(more + 60)}>Show more ({list.length - more} left)</button></div>}
+          </div>
+          {cur && <div className="mod noprint" onClick={() => setCur(null)}><div className="mbox" onClick={(e) => e.stopPropagation()}><div className="xb"><button className="g" onClick={() => setCur(null)}>Close ✕</button></div><Detail r={cur} info={info(cur)} task={tasks.find((t) => t.id === cur.taskId)} onSend={(m) => manual(cur, m)} /></div></div>}
+        </div>
+      )}
+    </div></div>
+  );
+}
+
+createRoot(document.getElementById("root")).render(<Home />);
+</script>
+</body>
+</html>
