@@ -16,6 +16,7 @@ Check especially for compliance problems: guaranteed or assured returns, fixed p
 Explain clearly WHY the sale did or did not happen: the exact mistakes the rep made.
 Return ONLY valid JSON, no markdown, exact shape:
 {"overall":0-100,"outcome":"Likely Sale"|"Warm Lead"|"Lost","summary":"2-3 lines","why":"main reason the sale happened or not",
+"strategy":"No Strategy"|"5 in 5"|"Combo"|"MPO","callStatus":"Follow-up"|"Interested"|"Not Interested"|"Not Connected",
 "scores":${shape},
 "mistakes":[{"parameter":"exact parameter name from the list","mistake":"","quote":"short exact line from the call","fix":"what to say instead"}],
 "mandatory":[{"statement":"exact statement text","result":"yes"|"partial"|"no","evidence":""}],
@@ -24,6 +25,7 @@ Return ONLY valid JSON, no markdown, exact shape:
 "objections":[{"objection":"","handled":true,"better":"better reply"}],
 "missed":["missed selling opportunities"],
 "tips":["5 concrete steps to increase sales"]}
+"strategy" = the main strategy the rep pitched on the call ("No Strategy" if none was pitched). "callStatus" = how the call ended: "Interested" (investor agreed or showed clear interest), "Follow-up" (a callback or follow-up was fixed, or the investor wants time), "Not Interested", or "Not Connected" (no real conversation: voicemail, wrong number, call dropped).
 Be honest and specific, cite actual lines, never invent things that are not in the transcript.
 Score EACH parameter strictly between 0 and its max points, using the description after the colon as what to look for. Give 0 if the rep did not do it at all. Use whole or half points only. Every weak parameter must have at least one entry in "mistakes" with its "parameter" name.
 PARAMETERS:

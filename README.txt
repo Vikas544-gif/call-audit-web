@@ -30,6 +30,7 @@ AFTER THE FIRST DEPLOY (Dashboard > Settings)
 
 HOW A CALL IS HANDLED
 1. Auditor picks the agent, types Customer name and Contact ID, uploads one or many calls.
+   Strategy and Call status are "Auto (AI decides)" by default: the AI reads the call and fills them. The auditor can still pick a value by hand. Call type is always chosen by the auditor.
 2. The AI scores every parameter, lists mistakes (with the line from the call and a better reply),
    checks the mandatory statements yes / partial / no. All feedback is in English.
 3. The result shows on screen at once. Emails go out in the background:

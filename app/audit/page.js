@@ -4,6 +4,7 @@ import { upload } from "@vercel/blob/client";
 import { useStore, api, getPass, nextTs, colr, rd, CTYPES, STRATS, STATUSES } from "../components/data";
 import { Lock, Setup, Logo, ThemePicker, Modal, Detail } from "../components/ui";
 import { mandList, weakParams } from "../../lib/defaults";
+import { resolveAuto } from "../../lib/filters";
 
 const POOL = 3; // calls processed at the same time
 
@@ -16,11 +17,11 @@ function compose(res, ag, f, meta, params, calib) {
     const v = Math.max(0, Math.min(p.max, rd(raw + (p.max * calib) / 100)));
     sc[p.label] = { s: v, max: p.max }; s += v; m += p.max;
   });
-  const { scores, overall, ...rest } = res;
+  const { scores, overall, strategy: aiStrategy, callStatus: aiStatus, ...rest } = res;
   return {
     ...rest, mistakes: Array.isArray(res.mistakes) ? res.mistakes : [], mandatory: normM(res.mandatory), sc, total: m ? Math.round((s / m) * 100) : 0,
     rep: ag.name, center: ag.center, tl: ag.tl, oo: ag.oo || "", tenure: ag.tenure || "", file: f.name,
-    customer: meta.customer.trim(), contactId: meta.contactId.trim(), type: meta.callType, strategy: meta.strategy, cstatus: meta.cstatus,
+    customer: meta.customer.trim(), contactId: meta.contactId.trim(), type: meta.callType, strategy: resolveAuto(meta.strategy, STRATS, aiStrategy, "No Strategy"), cstatus: resolveAuto(meta.cstatus, STATUSES, aiStatus, "Follow-up"),
     ts: nextTs(), date: new Date().toLocaleString("en-GB"),
   };
 }
@@ -28,7 +29,7 @@ function compose(res, ag, f, meta, params, calib) {
 export default function AuditPage() {
   const S = useStore("audit");
   const [agent, setAgent] = useState(""), [customer, setCustomer] = useState(""), [contactId, setContactId] = useState("");
-  const [callType, setCallType] = useState(CTYPES[0]), [strategy, setStrategy] = useState(STRATS[0]), [cstatus, setCstatus] = useState(STATUSES[0]);
+  const [callType, setCallType] = useState(CTYPES[0]), [strategy, setStrategy] = useState("Auto"), [cstatus, setCstatus] = useState("Auto");
   const [files, setFiles] = useState([]), [fileKey, setFileKey] = useState(0), [jobs, setJobs] = useState([]), [busy, setBusy] = useState(false), [err, setErr] = useState("");
   const [mine, setMine] = useState([]), [cur, setCur] = useState(null);
 
@@ -105,8 +106,8 @@ export default function AuditPage() {
           </div>
           <div className="fg">
             <label>Call type<select value={callType} onChange={(e) => setCallType(e.target.value)}>{CTYPES.map((x) => <option key={x}>{x}</option>)}</select></label>
-            <label>Strategy<select value={strategy} onChange={(e) => setStrategy(e.target.value)}>{STRATS.map((x) => <option key={x}>{x}</option>)}</select></label>
-            <label>Call status<select value={cstatus} onChange={(e) => setCstatus(e.target.value)}>{STATUSES.map((x) => <option key={x}>{x}</option>)}</select></label>
+            <label>Strategy<select value={strategy} onChange={(e) => setStrategy(e.target.value)}><option value="Auto">Auto (AI decides)</option>{STRATS.map((x) => <option key={x}>{x}</option>)}</select></label>
+            <label>Call status<select value={cstatus} onChange={(e) => setCstatus(e.target.value)}><option value="Auto">Auto (AI decides)</option>{STATUSES.map((x) => <option key={x}>{x}</option>)}</select></label>
           </div>
           <input key={fileKey} type="file" accept="audio/*" multiple onChange={(e) => setFiles([...e.target.files])} />
           <div style={{ marginTop: 10 }}><button disabled={busy || !files.length} onClick={run}>{busy ? "Running..." : `Run audit${files.length ? ` (${files.length} ${files.length === 1 ? "call" : "calls"})` : ""}`}</button>
