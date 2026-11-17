@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Training plan</title>
+<title>Follow-up</title>
 <style>
 body{margin:0;background:#f5f6f8;color:#14181f;font:15px/1.5 Arial,Helvetica,sans-serif}
 .w{max-width:620px;margin:0 auto;padding:18px}
@@ -11,19 +11,21 @@ button{background:#0b7a5b;color:#fff;border:0;border-radius:8px;padding:11px 18p
 .tag{display:inline-block;background:#fdf0d0;color:#b7791f;border-radius:99px;padding:2px 10px;font-size:12px;font-weight:700;margin:2px}
 .err{color:#c0392b}.ok{color:#0b7a5b;font-weight:700}
 </style></head><body><div class="w">
-<h1>Training plan</h1>
+<h1 id="title">Follow-up</h1>
 <div id="info" class="c">Loading...</div>
 <div id="form" class="c" style="display:none">
-<label>Your name (trainer)</label><input id="trainer">
+<label id="lname">Your name</label><input id="trainer">
 <label>Action taken</label>
 <select id="action"><option>1:1 coaching</option><option>Call listening</option><option>Script refresher</option><option>Role play</option><option>Product / process session</option><option>Other</option></select>
-<label>Training date</label><input id="trainDate" type="date">
+<label>Date done</label><input id="trainDate" type="date">
 <label>Next review date</label><input id="nextReview" type="date">
 <label>Notes</label><textarea id="notes" rows="4"></textarea>
 <button id="go">Submit</button><div id="msg"></div>
-</div></div>
+</div>
+<div id="ackbox" class="c" style="display:none"><button id="ackgo" style="margin-top:0">I acknowledge</button><div id="ackmsg"></div></div>
+</div>
 <script>
-const id = new URLSearchParams(location.search).get("id");
+const q = new URLSearchParams(location.search), id = q.get("id"), ack = q.get("ack") === "1";
 const $ = (x) => document.getElementById(x);
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 (async () => {
@@ -31,12 +33,18 @@ const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": 
     const r = await fetch("/api/training?id=" + encodeURIComponent(id || ""));
     const j = await r.json();
     if (!r.ok) throw new Error(j.error || "Error");
-    const t = j.task;
+    const t = j.task, tr = t.owner !== "TL";
+    $("title").textContent = ack ? "Acknowledge your " + (tr ? "training" : "coaching") : (tr ? "Training plan" : "Coaching feedback");
+    $("lname").textContent = tr ? "Your name (trainer)" : "Your name (team leader)";
     $("info").innerHTML = "<b>" + esc(t.agent) + "</b>" + (t.center ? " &middot; " + esc(t.center) : "") + " &middot; audit score <b>" + esc(t.score) + "%</b>" +
+      "<p style='margin:6px 0'>Customer: <b>" + esc(t.customer || "-") + "</b>" + (t.contactId ? " &middot; Contact ID: <b>" + esc(t.contactId) + "</b>" : "") + "</p>" +
       ((t.weak || []).length ? "<p>Weak parameters:<br>" + t.weak.map((w) => '<span class="tag">' + esc(w) + "</span>").join("") + "</p>" : "") +
       ((t.mistakes || []).length ? "<p>Key mistakes:</p><ul>" + t.mistakes.map((m) => "<li>" + esc(m) + "</li>").join("") + "</ul>" : "") +
-      (t.status === "Submitted" ? '<p class="ok">Already submitted by ' + esc(t.trainer) + ". You can submit again to update it.</p>" : "");
-    $("form").style.display = "block";
+      (t.status === "Submitted" ? '<p class="ok">Completed by ' + esc(t.trainer) + (t.action ? " (" + esc(t.action) + ")" : "") + (ack ? "" : ". You can submit again to update it.") + "</p>" + (ack && t.notes ? "<p>" + esc(t.notes) + "</p>" : "") + (ack && t.nextReview ? "<p>Next review: " + esc(t.nextReview) + "</p>" : "") : "");
+    if (ack) {
+      if (t.status === "Submitted") { $("ackbox").style.display = "block"; if (t.ackAt) { $("ackbox").innerHTML = '<p class="ok">You have already acknowledged this. Thank you.</p>'; } }
+      else $("info").innerHTML += '<p class="err">This follow-up is not completed yet.</p>';
+    } else $("form").style.display = "block";
   } catch (e) { $("info").innerHTML = '<span class="err">' + esc(e.message) + "</span>"; }
 })();
 $("go").onclick = async () => {
@@ -46,7 +54,15 @@ $("go").onclick = async () => {
     const r = await fetch("/api/training", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     const j = await r.json();
     if (!r.ok) throw new Error(j.error || "Error");
-    $("form").innerHTML = '<p class="ok">Thank you. Your training plan has been recorded.</p>';
+    $("form").innerHTML = '<p class="ok">Thank you. Your follow-up has been recorded.</p>';
   } catch (e) { $("msg").innerHTML = '<p class="err">' + esc(e.message) + "</p>"; }
+};
+$("ackgo").onclick = async () => {
+  try {
+    const r = await fetch("/api/training", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id, ack: true }) });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || "Error");
+    $("ackbox").innerHTML = '<p class="ok">Thank you. Your acknowledgement is recorded.</p>';
+  } catch (e) { $("ackmsg").innerHTML = '<p class="err">' + esc(e.message) + "</p>"; }
 };
 </script></body></html>
