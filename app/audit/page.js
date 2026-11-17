@@ -89,7 +89,7 @@ export default function AuditPage() {
     <div>
       <header className="top">
         <div className="brand"><Logo /><div><b>Sales Call Audit</b><span>Audit page</span></div></div>
-        {S.role === "admin" && <div className="tabs"><a href="/dashboard">Dashboard ↗</a></div>}
+        {S.role === "admin" && <div className="tabs"><a href="/dashboard">Dashboard ↗</a><a href="/calls">Audited calls ↗</a></div>}
         <ThemePicker />
       </header>
       <div className="main">

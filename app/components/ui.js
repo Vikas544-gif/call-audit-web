@@ -144,7 +144,7 @@ export function Detail({ r, info, params, weakPct, taskMap, onSend, busy }) {
             {["Trainer", "TL"].map((o) => { const w = weak.filter((x) => x.owner === o); if (!w.length) return null; const tk = mine.find((t) => t.owner === o); return (
               <div className="f" key={o} style={{ borderLeftColor: tk && tk.status === "Submitted" ? "var(--good)" : "var(--warn)" }}>
                 <b>{o === "Trainer" ? "Trainer" : "Team Leader"}</b> <span className={"tag " + (tk && tk.status === "Submitted" ? "on1" : "warn1")}>{tk ? (tk.status === "Submitted" ? "Done" : "Waiting") : "Not sent"}</span>
-                <div>{w.map((x) => `${x.label} (${x.s}/${x.max})`).join(", ")}</div>
+                <div>{w.map((x) => `${x.label} (${x.pct}%)`).join(", ")}</div>
                 {tk && tk.status === "Submitted" && <div className="muted">{tk.trainer} · {tk.action}{tk.trainDate ? ` · ${tk.trainDate}` : ""}{tk.nextReview ? ` · next review ${tk.nextReview}` : ""}{tk.ackAt ? " · agent acknowledged" : ""}{tk.notes ? <div>{tk.notes}</div> : null}</div>}
               </div>); })}
           </div>)}
@@ -160,7 +160,7 @@ export function Detail({ r, info, params, weakPct, taskMap, onSend, busy }) {
       <div className="c" style={{ borderLeft: "4px solid var(--bad)" }}><H3>Why the sale did / didn't happen</H3>{r.why}</div>
       <div className="c"><H3>Parameter scores</H3>
         {Object.entries(r.sc).map(([k, v]) => { const p = (v.s / v.max) * 100; return (
-          <div className="bar" key={k}><label>{k} <span className="tag own" style={{ fontSize: 10, padding: "0 6px" }}>{ownerOf(params, k)}</span></label><i><s style={{ width: `${p}%`, background: colr(p) }} /></i><b>{v.s}/{v.max}</b></div>); })}
+          <div className="bar" key={k}><label>{k} <span className="tag own" style={{ fontSize: 10, padding: "0 6px" }}>{ownerOf(params, k)}</span></label><i><s style={{ width: `${p}%`, background: colr(p) }} /></i><b>{Math.round(p)}%</b></div>); })}
       </div>
       <div className="c"><H3>Mistakes and how to fix them</H3>
         {!(r.mistakes || []).length && <span className="muted">No mistakes recorded.</span>}
@@ -177,5 +177,25 @@ export function Detail({ r, info, params, weakPct, taskMap, onSend, busy }) {
       <div className="c"><H3>Missed opportunities</H3><L items={r.missed} /></div>
       <div className="c" style={{ borderLeft: "4px solid var(--good)" }}><H3>Steps to improve sales</H3><L items={r.tips} /></div>
     </div>
+  );
+}
+
+export function Gate({ S, title, children }) {
+  if (!S.ready) return <div className="lock">Loading...</div>;
+  if (S.locked) return <Lock title={title} wrong={S.wrong} onUnlock={S.unlock} />;
+  if (!S.configured || S.error) return <Setup error={S.error} />;
+  return children;
+}
+
+const NAV = [["/dashboard", "Dashboard"], ["/calls", "Audited calls"], ["/followups", "Follow-ups"], ["/settings", "Settings"]];
+export function AdminNav({ active, S, sub }) {
+  const sv = S.save || { s: "idle" };
+  return (
+    <header className="top">
+      <div className="brand"><Logo /><div><b>Sales Call Audit</b><span>{sub}</span></div></div>
+      <nav className="tabs">{NAV.map(([h, n]) => <a key={h} href={h} className={active === h ? "on" : ""}>{n}</a>)}<a href="/audit">Audit page ↗</a></nav>
+      {sv.s !== "idle" && <span className={"tag " + (sv.s === "error" ? "bad" : sv.s === "saving" ? "warn1" : "on1")} style={{ background: "var(--card)" }}>{sv.s === "saving" ? "Saving..." : sv.s === "saved" ? "Saved ✓" : "Save failed: " + sv.msg}</span>}
+      <ThemePicker />
+    </header>
   );
 }

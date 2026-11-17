@@ -12,7 +12,8 @@ export const heat = (p) => (p == null ? "transparent" : p >= 75 ? "rgba(11,154,1
 export const rd = (n) => Math.round(n * 10) / 10;
 export const avg = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
 export const uniq = (a) => [...new Set(a.filter(Boolean))].sort();
-export const wkLbl = (t) => { if (!t) return "-"; const d = new Date(t); return `Week ${Math.ceil(d.getDate() / 7)} ${d.toLocaleString("en", { month: "short" })}`; };
+export { wkLbl } from "../../lib/filters";
+export const pct = (v) => (v == null || isNaN(v) ? "-" : Math.round(v) + "%");
 export const fixA = (arr) => (Array.isArray(arr) ? arr : []).filter((a) => a && a.ts && a.rep).map((a) => ({ ...a, sc: a.sc || {}, mistakes: a.mistakes || [], mandatory: a.mandatory || [], tasks: a.tasks || [] }));
 export const mandScore = (a) => { const m = a.mandatory || []; return m.length ? (m.reduce((x, y) => x + (y.result === "yes" ? 1 : y.result === "partial" ? 0.5 : 0), 0) / m.length) * 100 : null; };
 
@@ -40,10 +41,28 @@ export function useStore(scope) {
   const [audits, setAudits] = useState([]), [tasks, setTasks] = useState([]);
   const timers = useRef({});
 
-  const persist = (k, v) => {
-    clearTimeout(timers.current[k]);
-    timers.current[k] = setTimeout(() => { api("/api/store", { method: "POST", body: JSON.stringify({ action: "set", key: KEYMAP[k], value: v }) }).catch(() => {}); }, 500);
+  const [save, setSave] = useState({ s: "idle", msg: "" });
+  const doSave = async (k, v) => {
+    setSave({ s: "saving", msg: "" });
+    try {
+      const r = await api("/api/store", { method: "POST", body: JSON.stringify({ action: "set", key: KEYMAP[k], value: v }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || `Save failed (${r.status})`);
+      setSave({ s: "saved", msg: "" });
+    } catch (e) { setSave({ s: "error", msg: e.message || "Network error" }); }
   };
+  // typing is saved after a short pause; buttons (add, remove, import) pass now=true and save at once
+  const persist = (k, v, now) => {
+    clearTimeout(timers.current[k]);
+    if (now) { timers.current[k] = null; return doSave(k, v); }
+    setSave({ s: "saving", msg: "" });
+    timers.current[k] = setTimeout(() => { timers.current[k] = null; doSave(k, v); }, 500);
+  };
+  useEffect(() => {
+    const warn = (e) => { if (Object.values(timers.current).some(Boolean)) { e.preventDefault(); e.returnValue = ""; } };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, []);
   const loadTasks = async () => { try { const r = await api("/api/training"); if (r.ok) setTasks((await r.json()).tasks || []); } catch {} };
   const refresh = async () => {
     try {
@@ -79,9 +98,10 @@ export function useStore(scope) {
 
   return {
     ...st, params, centers, amap, mcfg, audits, tasks, setAudits, setTasks, refresh, loadTasks, unlock, reload: load,
-    saveParams: (v) => { setParams(v); persist("params", v); },
-    saveCenters: (v) => { setCenters(v); persist("centers", v); },
-    saveMap: (v) => { setAmap(v); persist("amap", v); },
-    saveCfg: (v) => { setMcfg(v); persist("mcfg", v); },
+    save,
+    saveParams: (v, now) => { setParams(v); return persist("params", v, now); },
+    saveCenters: (v, now) => { setCenters(v); return persist("centers", v, now); },
+    saveMap: (v, now) => { setAmap(v); return persist("amap", v, now); },
+    saveCfg: (v, now) => { setMcfg(v); return persist("mcfg", v, now); },
   };
 }

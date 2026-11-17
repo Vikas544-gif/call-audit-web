@@ -1,9 +1,13 @@
 SALES CALL AUDIT - SETUP
 
-TWO SEPARATE PAGES
-  https://YOUR-APP.vercel.app/audit       Audit page: upload calls, run audits (fast: 3 calls at the same time)
-  https://YOUR-APP.vercel.app/dashboard   Dashboard: scores, slicers, follow-ups, Settings (admin only)
-  https://YOUR-APP.vercel.app/            Small start page with both links
+SEPARATE PAGES
+  /audit       Audit page: upload calls, run audits (3 calls at the same time)
+  /dashboard   Dashboard: KPIs, charts, agent-wise report (all scores in %), summaries      (admin)
+  /calls       Audited calls: every call with customer, contact ID and mistakes; "By agent" view  (admin)
+  /followups   Follow-ups: what the Trainer and the TLs have to do and have done              (admin)
+  /settings    Settings: agents, centers, parameters + owners, mandatory statements, emails    (admin)
+  /            Small start page with all the links
+  Filters (Center, TL, Agent slicers and the rest) are shared between Dashboard and Audited calls in the same browser tab.
 
 PASSWORDS (Vercel > Settings > Environment Variables)
   DASH_PASSWORD   = admin. Opens everything.

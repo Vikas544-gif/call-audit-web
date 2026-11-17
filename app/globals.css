@@ -92,6 +92,14 @@ input[type=range]{padding:0;width:100%}
 .land{max-width:760px;margin:12vh auto;padding:0 20px;text-align:center}
 .land .cols a{display:block;text-decoration:none;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:26px;font-weight:800;font-size:18px}
 .land .cols a:hover{box-shadow:0 6px 18px rgba(0,0,0,.15)}
+.band button.g{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.3)}
+.band .cnt{color:#cbd8ee;font-size:13px}
+.band .cnt b{color:#fff}
+.ag{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--mute);border-radius:12px;padding:14px}
+.ag h4{margin:0}.ag small{display:block;color:var(--mute);font-size:12px}
+.seg{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
+.seg button{background:transparent;color:var(--text);padding:7px 16px}
+.seg button.on{background:var(--accent);color:#fff}
 @media(max-width:1100px){.gr{grid-template-columns:repeat(2,minmax(0,1fr))}.kp{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:900px){.slg{grid-template-columns:1fr}.top{padding:12px 14px}.main{padding:14px}.bar label{width:130px}}
 @media(max-width:700px){.gr{grid-template-columns:1fr}.kp{grid-template-columns:1fr 1fr}.gr .ch{grid-column:auto!important}}

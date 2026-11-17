@@ -46,7 +46,7 @@ export async function POST(req) {
         const task = {
           id: tk ? tk.id : newId(), created: Date.now(), auditTs: a.ts, owner, agent: a.rep, center: a.center || "", tl: a.tl || "",
           customer: a.customer || "", contactId: a.contactId || "", score: a.total, outcome: a.outcome || "",
-          weak: mine.map((w) => `${w.label} (${w.s}/${w.max})`), mistakes: related.map((m) => m.mistake), mistakesFull: related, status: "Pending",
+          weak: mine.map((w) => `${w.label} (${w.pct}%)`), mistakes: related.map((m) => m.mistake), mistakesFull: related, status: "Pending",
         };
         if (tk) {
           const [old] = await pipeline([["HGET", "tasks", tk.id]]);
