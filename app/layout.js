@@ -2,7 +2,7 @@ import "./globals.css";
 
 export const metadata = { title: "Sales Call Audit" };
 
-const themeInit = `try{var t=localStorage.getItem("cat");if(t)document.documentElement.dataset.theme=t}catch(e){}`;
+const themeInit = `try{var t=localStorage.getItem("cat");if(t)document.documentElement.dataset.theme=t;var a=localStorage.getItem("caa");if(a)document.documentElement.style.setProperty("--accent",a)}catch(e){}`;
 
 export default function RootLayout({ children }) {
   return (

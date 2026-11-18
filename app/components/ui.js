@@ -1,18 +1,39 @@
 "use client";
-import { useEffect, useState } from "react";
-import { colr, rd } from "./data";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { colr, rd, api, fmtDur } from "./data";
+import { parseTranscript, lineHasQuote } from "../../lib/transcript";
 import { weakParams, ownerOf } from "../../lib/defaults";
 
 export const Logo = () => (
   <svg width="38" height="38" viewBox="0 0 38 38"><rect width="38" height="38" rx="10" fill="#0b9a72" /><g fill="#fff"><rect x="7" y="16" width="3.6" height="6" rx="1.8" /><rect x="13" y="11" width="3.6" height="16" rx="1.8" /><rect x="19" y="7" width="3.6" height="24" rx="1.8" /><rect x="25" y="13" width="3.6" height="12" rx="1.8" /><rect x="31" y="17" width="3.6" height="4" rx="1.8" /></g></svg>
 );
 
-const THEMES = [["light", "Light", "#ffffff"], ["dark", "Dark", "#151c27"], ["ocean", "Ocean", "#1a73e8"], ["forest", "Forest", "#1f8a4c"]];
+const THEMES = [["light", "Light", "#ffffff", "#0b7a5b"], ["dark", "Dark", "#151c27", "#19a57a"], ["ocean", "Ocean", "#eaf2fb", "#1a73e8"], ["forest", "Forest", "#eef4ef", "#1f8a4c"], ["sunset", "Sunset", "#fff4ec", "#e4572e"], ["purple", "Purple", "#f3effc", "#6d4aff"], ["slate", "Slate (dark)", "#1b2230", "#5b9cff"], ["contrast", "High contrast", "#ffffff", "#000000"]];
 export function ThemePicker() {
-  const [t, setT] = useState("light");
-  useEffect(() => { setT(document.documentElement.dataset.theme || "light"); }, []);
+  const [open, setOpen] = useState(false), [t, setT] = useState("light"), [acc, setAcc] = useState("");
+  useEffect(() => { setT(document.documentElement.dataset.theme || "light"); try { setAcc(localStorage.getItem("caa") || ""); } catch {} }, []);
+  useEffect(() => {
+    if (!open) return;
+    const h = (e) => { if (!(e.target.closest && e.target.closest(".thmw"))) setOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [open]);
   const pick = (x) => { document.documentElement.dataset.theme = x; try { localStorage.setItem("cat", x); } catch {} setT(x); };
-  return <div className="thm noprint">{THEMES.map(([k, n, c]) => <button key={k} className={"sw" + (t === k ? " on" : "")} style={{ background: c }} title={n + " theme"} aria-label={n + " theme"} onClick={() => pick(k)} />)}</div>;
+  const setAccent = (c) => { document.documentElement.style.setProperty("--accent", c); try { localStorage.setItem("caa", c); } catch {} setAcc(c); };
+  const clearAccent = () => { document.documentElement.style.removeProperty("--accent"); try { localStorage.removeItem("caa"); } catch {} setAcc(""); };
+  return (
+    <div className="thmw noprint">
+      <button className="thb" onClick={() => setOpen(!open)} aria-haspopup="true" aria-expanded={open}>🎨 Theme</button>
+      {open && (
+        <div className="thp" role="dialog" aria-label="Theme">
+          <div className="thg">{THEMES.map(([k, n, bg, ac]) => <button key={k} className={"thi" + (t === k ? " on" : "")} onClick={() => pick(k)}><span className="thsw" style={{ background: bg, borderColor: ac }}><i style={{ background: ac }} /></span>{n}</button>)}</div>
+          <div className="row" style={{ marginTop: 10, marginBottom: 0 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700 }}>Accent color<input type="color" value={acc || "#0b7a5b"} onChange={(e) => setAccent(e.target.value)} style={{ width: 40, height: 28, padding: 0, border: 0, background: "none" }} /></label>
+            {acc && <button className="g" style={{ padding: "4px 10px", fontSize: 12 }} onClick={clearAccent}>Reset</button>}
+          </div>
+        </div>)}
+    </div>
+  );
 }
 
 export function Lock({ onUnlock, wrong, title }) {
@@ -108,27 +129,78 @@ export function Slicer({ title, opts, sel, onChange }) {
   );
 }
 
+const Unv = ({ v }) => (v === false ? <span className="tag warn1" style={{ marginLeft: 6, fontSize: 11 }}>quote not found in script</span> : null);
+// when the recording is open in this tab, a time tag plays the call from that moment
+const SeekCtx = createContext(null);
+const toSec = (v) => { const m = String(v || "").match(/(\d+):(\d{2})/); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
+const At = ({ v }) => {
+  const seek = useContext(SeekCtx), t = toSec(v);
+  if (!v) return null;
+  return seek && t != null
+    ? <span className="tag own" style={{ marginLeft: 6, fontSize: 11, cursor: "pointer" }} title="Play from here" onClick={() => seek(t)}>▶ {v}</span>
+    : <span className="tag own" style={{ marginLeft: 6, fontSize: 11 }}>{v}</span>;
+};
+
+function ScriptBox({ r, preset }) {
+  const [text, setText] = useState(preset || ""), [st, setSt] = useState(preset ? "ok" : "idle"), [open, setOpen] = useState(false);
+  useEffect(() => { setText(preset || ""); setSt(preset ? "ok" : "idle"); setOpen(false); }, [r.ts, preset]);
+  const show = async () => {
+    setOpen(true);
+    if (text) return;
+    setSt("loading");
+    try {
+      const res = await api("/api/script?ts=" + r.ts);
+      const j = await res.json();
+      if (!res.ok || !j.transcript) throw new Error(j.error || "Script is not available for this call");
+      setText(j.transcript); setSt("ok");
+    } catch (e) { setSt("err:" + e.message); }
+  };
+  const seek = useContext(SeekCtx);
+  const lines = parseTranscript(text);
+  const quotes = [...(r.mistakes || []), ...(r.aiMistakes || []), ...(r.flags || [])].map((m) => m.quote).filter(Boolean);
+  const dl = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: "text/plain" })); a.download = `call-script-${(r.rep || "call").replace(/\s+/g, "-")}-${r.ts}.txt`; a.click(); };
+  return (
+    <div className="c"><H3>Call script</H3>
+      {!open && <button className="g" onClick={show}>Show call script</button>}
+      {open && st === "loading" && <span className="muted">Loading the script...</span>}
+      {open && st.startsWith("err:") && <span style={{ color: "var(--bad)" }}>{st.slice(4)}</span>}
+      {open && st === "ok" && (
+        <div>
+          <div className="row"><button className="g" onClick={() => navigator.clipboard && navigator.clipboard.writeText(text)}>Copy script</button><button className="g" onClick={dl}>Download (.txt)</button><span className="muted" style={{ fontSize: 13 }}>Lines with a mistake are marked in red.</span></div>
+          <div className="scr">
+            {lines.length ? lines.map((l, i) => <div key={i} className={"ln" + (lineHasQuote(l.text, quotes) ? " hit" : "") + (seek ? " pl" : "")} title={seek ? "Play from here" : undefined} onClick={seek ? () => seek(l.t) : undefined}><span className="tm">{String(Math.floor(l.t / 60)).padStart(2, "0")}:{String(l.t % 60).padStart(2, "0")}</span><span className={"who" + (l.who === "Agent" ? " ag" : "")}>{l.who}</span><span>{l.text}</span></div>) : <div style={{ whiteSpace: "pre-wrap" }}>{text}</div>}
+          </div>
+        </div>)}
+    </div>
+  );
+}
+
 const L = ({ items }) => <ul style={{ margin: 0, paddingLeft: 20 }}>{(items || []).map((x, i) => <li key={i}>{x}</li>)}</ul>;
 const H3 = ({ children }) => <h3 style={{ marginTop: 0 }}>{children}</h3>;
 const resTag = { yes: "on1", partial: "warn1", no: "bad" };
 
-export function Detail({ r, info, params, weakPct, taskMap, onSend, busy }) {
+export function Detail({ r, info, params, weakPct, taskMap, onSend, busy, script, audioUrl }) {
+  const audioRef = useRef(null);
+  const seekFn = audioUrl ? (t) => { const a = audioRef.current; if (a) { a.currentTime = t; const p = a.play(); if (p && p.catch) p.catch(() => {}); } } : null;
   const weak = weakParams(r, params, weakPct);
   const mine = (r.tasks || []).map((t) => ({ ...t, ...(taskMap[t.id] || {}) }));
   const mand = r.mandatory || [];
   const mail = r.mail || {};
   const err = [mail.agentErr, mail.trainerErr, mail.tlErr, mail.err].filter(Boolean);
   return (
+    <SeekCtx.Provider value={seekFn}>
     <div>
       <div className="c" style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
         <Ring p={r.total} />
         <div style={{ flex: 1, minWidth: 220 }}>
           <b>{r.rep} · {info.center} · TL: {info.tl || "-"} · {r.outcome}</b>
           <div style={{ margin: "4px 0", fontWeight: 700 }}>Customer: {r.customer || "-"}{r.contactId ? ` · Contact ID: ${r.contactId}` : ""}</div>
+          {r.openingDelay != null && <div style={{ margin: "4px 0" }}><span className={"tag " + ((r.delayPenalty || 0) > 0 ? "bad" : "on1")}>Opening delay: {r.openingDelay}s{(r.delayPenalty || 0) > 0 ? ` (-${r.delayPenalty} points taken off the opening)` : " (OK)"}</span></div>}
           <p style={{ margin: "4px 0" }}>{r.summary}</p>
-          <small className="muted">{r.date} · {r.type} · {r.file}</small>
+          <small className="muted">{r.date} · {r.type} · {r.file}{r.durationSec ? ` · ${fmtDur(r.durationSec)} min` : ""}</small>
         </div>
       </div>
+      {audioUrl && <div className="c"><H3>Listen to the call</H3><audio ref={audioRef} controls preload="metadata" src={audioUrl} style={{ width: "100%" }} /><div className="muted" style={{ fontSize: 13, marginTop: 4 }}>Click a time (like ▶ 00:14) or a script line to play from there. This recording stays only in this browser tab. It is not saved on the server.</div></div>}
       {r.cmp && (
         <div className="c"><H3>Vs last call</H3>
           {r.cmp.delta == null ? <span className="muted">First audit for this agent. The comparison starts from the next call.</span> : (
@@ -164,19 +236,23 @@ export function Detail({ r, info, params, weakPct, taskMap, onSend, busy }) {
       </div>
       <div className="c"><H3>Mistakes and how to fix them</H3>
         {!(r.mistakes || []).length && <span className="muted">No mistakes recorded.</span>}
-        {(r.mistakes || []).map((m, i) => <div className="f" key={i}><b>{m.mistake}</b>{m.parameter && <span className="tag own" style={{ marginLeft: 8, fontSize: 11 }}>{m.parameter}</span>}<div className="q">"{m.quote}"</div><div>Say it like this: {m.fix}</div></div>)}</div>
+        {(r.mistakes || []).map((m, i) => <div className="f" key={i}><b>{m.mistake}</b>{m.parameter && <span className="tag own" style={{ marginLeft: 8, fontSize: 11 }}>{m.parameter}</span>}<At v={m.at} /><Unv v={m.verified} />{m.quote ? <div className="q">"{m.quote}"</div> : null}<div>Say it like this: {m.fix}</div></div>)}</div>
+      {(r.aiMistakes || []).length > 0 && <div className="c"><H3>Other mistakes found by the AI <span className="muted" style={{ fontWeight: 600, fontSize: 13 }}>(not limited to the parameters)</span></H3>
+        {r.aiMistakes.map((m, i) => <div className="f" key={i} style={{ borderLeftColor: m.severity === "High" ? "var(--bad)" : m.severity === "Low" ? "var(--mute)" : "var(--warn)" }}><b>{m.mistake}</b><span className="tag own" style={{ marginLeft: 8, fontSize: 11 }}>{m.category}</span><span className={"tag " + (m.severity === "High" ? "bad" : m.severity === "Low" ? "off1" : "warn1")} style={{ marginLeft: 6, fontSize: 11 }}>{m.severity}</span><At v={m.at} /><Unv v={m.verified} />{m.quote ? <div className="q">"{m.quote}"</div> : null}{m.why ? <div className="muted">{m.why}</div> : null}<div>Say it like this: {m.fix}</div></div>)}</div>}
       {mand.length > 0 && <div className="c"><H3>Mandatory statements</H3>
         {mand.map((m, i) => <div className="f" key={i} style={{ borderLeftColor: m.result === "yes" ? "var(--good)" : m.result === "partial" ? "var(--warn)" : "var(--bad)" }}><span className={"tag " + (resTag[m.result] || "off1")}>{m.result}</span> {m.statement}{m.evidence ? <div className="q">"{m.evidence}"</div> : null}</div>)}</div>}
       <div className="c"><H3>Compliance flags</H3>
         {!(r.flags || []).length && <span style={{ color: "var(--good)" }}>No major issues found.</span>}
-        {(r.flags || []).map((f, i) => <div className="f" key={i}><b>{f.issue}</b> ({f.severity})<div className="q">"{f.quote}"</div><div>Fix: {f.fix}</div></div>)}</div>
+        {(r.flags || []).map((f, i) => <div className="f" key={i}><b>{f.issue}</b> ({f.severity})<At v={f.at} /><Unv v={f.verified} /><div className="q">"{f.quote}"</div><div>Fix: {f.fix}</div></div>)}</div>
       <div className="c"><H3>Objections</H3>
         {!(r.objections || []).length && <span className="muted">No objections in this call.</span>}
         {(r.objections || []).map((o, i) => <div className="f" key={i} style={{ borderLeftColor: o.handled ? "var(--good)" : "var(--bad)" }}><b>{o.objection}</b> <span className={"tag " + (o.handled ? "on1" : "bad")}>{o.handled ? "Handled" : "Not handled"}</span>{o.better && <div>Better reply: {o.better}</div>}</div>)}</div>
       <div className="c"><H3>What went well</H3><L items={r.strengths} /></div>
       <div className="c"><H3>Missed opportunities</H3><L items={r.missed} /></div>
       <div className="c" style={{ borderLeft: "4px solid var(--good)" }}><H3>Steps to improve sales</H3><L items={r.tips} /></div>
+      <ScriptBox r={r} preset={script || r.transcript} />
     </div>
+    </SeekCtx.Provider>
   );
 }
 
@@ -187,7 +263,7 @@ export function Gate({ S, title, children }) {
   return children;
 }
 
-const NAV = [["/dashboard", "Dashboard"], ["/calls", "Audited calls"], ["/followups", "Follow-ups"], ["/settings", "Settings"]];
+const NAV = [["/dashboard", "Dashboard"], ["/calls", "Audited calls"], ["/mistakes", "AI Mistakes"], ["/followups", "Follow-ups"], ["/settings", "Settings"]];
 export function AdminNav({ active, S, sub }) {
   const sv = S.save || { s: "idle" };
   return (

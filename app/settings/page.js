@@ -117,6 +117,17 @@ export default function SettingsPage() {
         </div>
 
         <div className="c">
+          <H3>Late opening (call delay) rule</H3>
+          <p className="muted" style={{ marginTop: 0 }}>The customer picks up and says hello. If the agent starts speaking later than the allowed seconds, the score of the opening parameter goes down automatically, and a "delayed opening" mistake is added. The delay is measured from the call script times.</p>
+          <div className="row"><label style={{ display: "flex", gap: 8, alignItems: "center" }}><input type="checkbox" checked={mcfg.delayOn !== false} onChange={(e) => S.saveCfg({ ...mcfg, delayOn: e.target.checked }, true)} /> Reduce the opening score when the call opens late</label></div>
+          <div className="fg">
+            <label>Allowed delay (seconds)<input type="number" min="1" max="120" value={mcfg.delaySec == null ? 10 : mcfg.delaySec} onChange={(e) => S.saveCfg({ ...mcfg, delaySec: Math.max(1, Number(e.target.value) || 10) })} /></label>
+            <label>Score taken off (% of the opening weightage)<input type="number" min="1" max="100" value={mcfg.delayPct == null ? 40 : mcfg.delayPct} onChange={(e) => S.saveCfg({ ...mcfg, delayPct: Math.min(100, Math.max(1, Number(e.target.value) || 40)) })} /></label>
+            <label>Opening parameter<select value={mcfg.delayParam || "INTRODUCTION"} onChange={(e) => S.saveCfg({ ...mcfg, delayParam: e.target.value }, true)}>{params.map((p) => <option key={p.label}>{p.label}</option>)}</select></label>
+          </div>
+        </div>
+
+        <div className="c">
           <H3>Mandatory statements</H3>
           <p className="muted" style={{ marginTop: 0 }}>One per line. Each one is checked yes / partial / no on every call.</p>
           <textarea style={{ width: "100%", minHeight: 150, fontFamily: "ui-monospace,monospace", fontSize: 13 }} value={mcfg.mand} onChange={(e) => S.saveCfg({ ...mcfg, mand: e.target.value })} />

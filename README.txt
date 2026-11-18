@@ -4,6 +4,7 @@ SEPARATE PAGES
   /audit       Audit page: upload calls, run audits (3 calls at the same time)
   /dashboard   Dashboard: KPIs, charts, agent-wise report (all scores in %), summaries      (admin)
   /calls       Audited calls: every call with customer, contact ID and mistakes; "By agent" view  (admin)
+  /mistakes    AI Mistakes: mistakes the AI found on its own (not only parameters), with quote, time and fix   (admin)
   /followups   Follow-ups: what the Trainer and the TLs have to do and have done              (admin)
   /settings    Settings: agents, centers, parameters + owners, mandatory statements, emails    (admin)
   /            Small start page with all the links
@@ -44,7 +45,18 @@ HOW A CALL IS HANDLED
    (Draft = QA inbox gets a ready draft, Auto = goes to the agent directly, Off).
 5. Everything shows on the Dashboard under Follow-ups.
 
-THEMES: the round buttons at the top (Light, Dark, Ocean, Forest). The choice is remembered per browser.
+THEMES: the "Theme" button at the top: 8 themes (Light, Dark, Ocean, Forest, Sunset, Purple, Slate, High contrast) and your own accent colour. Remembered per browser.
+
+CALL SCRIPT: every audit saves the call script with [mm:ss] times and Agent / Customer labels. Open a call and press "Show call script" (mistake lines are marked red).
+
+OPENING DELAY RULE (Settings): if the agent starts speaking later than the allowed seconds after the customer picks up, the opening parameter score goes down and a "delayed opening" mistake is added.
+
+LISTEN BEFORE YOU AUDIT: on the Audit page every chosen call gets a box with its length (mm:ss) and a player, so the auditor can listen first. After the audit, open the call in "Your audits in this session": a player appears and a click on a script line or a mistake time plays the call from there. The recording stays only in the browser tab (it is not stored on the server; the audio is deleted after transcription). The call length is saved with each audit.
+
+SPEED / QUALITY SWITCHES (Vercel environment variables, all optional)
+  GEMINI_THINKING = low (default) | off | default   low = faster. Use "default" if you feel the scoring got less careful.
+  AAI_LANGUAGE    = hi or en    skips language detection: faster, and often better when most calls are in one language.
+  GEMINI_MODEL    = the Gemini model name to use.
 
 NOTES
 - Audio is deleted right after transcription.

@@ -1,5 +1,6 @@
 import { configured, pipeline, roleOf, protectedApp, parse } from "../../../lib/db";
 import { cmpOf } from "../../../lib/cmp";
+import { MCFG, OWNERS_V, DEFAULT_PARAMS, applyOwners } from "../../../lib/defaults";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +10,12 @@ async function readCfg() {
   const [vals] = await pipeline([["MGET", ...KEYS]]);
   const o = {};
   KEYS.forEach((k, i) => { o[k] = parse(vals[i]); });
+  // one-time: when the owner table (Trainer / TL per parameter) changes, saved settings get the new owners once
+  if (!o.mcfg3 || o.mcfg3.ownersV !== OWNERS_V) {
+    o.params3 = applyOwners(o.params3 && o.params3.length ? o.params3 : DEFAULT_PARAMS);
+    o.mcfg3 = { ...MCFG, ...(o.mcfg3 || {}), ownersV: OWNERS_V };
+    await pipeline([["SET", "params3", JSON.stringify(o.params3)], ["SET", "mcfg3", JSON.stringify(o.mcfg3)]]);
+  }
   return o;
 }
 
@@ -22,7 +29,7 @@ export async function GET(req) {
       const o = await readCfg();
       const amap = (o.amap || []).map(({ email, tlEmail, ...rest }) => rest);
       const c = o.mcfg3 || {};
-      const mcfg3 = { auto: c.auto, weakPct: c.weakPct, calib: c.calib, mand: c.mand };
+      const mcfg3 = { auto: c.auto, weakPct: c.weakPct, calib: c.calib, mand: c.mand, delayOn: c.delayOn, delaySec: c.delaySec, delayPct: c.delayPct, delayParam: c.delayParam };
       return Response.json({ configured: true, role, params3: o.params3, centers: o.centers, amap, mcfg3 });
     }
     if (role !== "admin") return Response.json({ error: "admin only" }, { status: 403 });
@@ -49,15 +56,25 @@ export async function POST(req) {
     }
     if (b.action === "audit" && b.audit && b.audit.ts && b.audit.rep) {
       const a = b.audit;
-      // "vs last call" is worked out here, so the audit page never needs to read other audits
-      const [flat] = await pipeline([["HGETALL", "audits"]]);
-      let prev = null;
-      for (let i = 1; i < (flat || []).length; i += 2) {
-        const x = parse(flat[i]);
-        if (x && x.rep === a.rep && x.ts < a.ts && (!prev || x.ts > prev.ts)) prev = x;
+      const key = String(a.rep).trim().toLowerCase();
+      // "vs last call" is worked out here (the audit page never reads other audits). A small per-agent index keeps it fast.
+      const [lastRaw] = await pipeline([["HGET", "last", key]]);
+      let prev = parse(lastRaw);
+      if (!prev || prev.ts >= a.ts) {
+        prev = null;
+        const [flat] = await pipeline([["HGETALL", "audits"]]);
+        for (let i = 1; i < (flat || []).length; i += 2) {
+          const x = parse(flat[i]);
+          if (x && String(x.rep).trim().toLowerCase() === key && x.ts < a.ts && (!prev || x.ts > prev.ts)) prev = x;
+        }
       }
       a.cmp = cmpOf(a, prev);
-      await pipeline([["HSET", "audits", String(a.ts), JSON.stringify(a)]]);
+      const cmds = [["HSET", "audits", String(a.ts), JSON.stringify(a)]];
+      if (typeof b.transcript === "string" && b.transcript) cmds.push(["HSET", "scripts", String(a.ts), b.transcript.slice(0, 150000)]);
+      const [cur] = await pipeline([["HGET", "last", key]]);
+      const c = parse(cur);
+      if (!c || c.ts < a.ts) cmds.push(["HSET", "last", key, JSON.stringify({ ts: a.ts, total: a.total, sc: a.sc, date: a.date })]);
+      await pipeline(cmds);
       return Response.json({ ok: true, audit: a });
     }
     if (b.action === "audits" && Array.isArray(b.audits) && b.audits.length) {

@@ -2,17 +2,19 @@
 import { useEffect, useRef, useState } from "react";
 import { DEFAULT_PARAMS, CENTERS, MCFG } from "../../lib/defaults";
 
-export const TENURES = ["0-3 Month", "3-6 Month", "More than 6 Month"];
-export const STRATS = ["No Strategy", "5 in 5", "Combo", "MPO"];
-export const STATUSES = ["Follow-up", "Interested", "Not Interested", "Not Connected"];
-export const CTYPES = ["New Lead", "Work to Non Work"];
-
+export { TENURES, STRATS, STATUSES, CTYPES } from "../../lib/defaults";
 export const colr = (p) => (p >= 75 ? "#0b9a72" : p >= 50 ? "#d29a1f" : "#d4493a");
 export const heat = (p) => (p == null ? "transparent" : p >= 75 ? "rgba(11,154,114,.22)" : p >= 50 ? "rgba(210,154,31,.24)" : "rgba(212,73,58,.24)");
 export const rd = (n) => Math.round(n * 10) / 10;
 export const avg = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
 export const uniq = (a) => [...new Set(a.filter(Boolean))].sort();
 export { wkLbl } from "../../lib/filters";
+// 754 -> "12:34", 3725 -> "1:02:05"
+export const fmtDur = (sec) => {
+  if (sec == null || isNaN(sec) || sec < 0) return "-";
+  const s = Math.round(sec), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60;
+  return (h ? h + ":" + String(m).padStart(2, "0") : String(m)) + ":" + String(x).padStart(2, "0");
+};
 export const pct = (v) => (v == null || isNaN(v) ? "-" : Math.round(v) + "%");
 export const fixA = (arr) => (Array.isArray(arr) ? arr : []).filter((a) => a && a.ts && a.rep).map((a) => ({ ...a, sc: a.sc || {}, mistakes: a.mistakes || [], mandatory: a.mandatory || [], tasks: a.tasks || [] }));
 export const mandScore = (a) => { const m = a.mandatory || []; return m.length ? (m.reduce((x, y) => x + (y.result === "yes" ? 1 : y.result === "partial" ? 0.5 : 0), 0) / m.length) * 100 : null; };

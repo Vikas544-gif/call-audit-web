@@ -7,6 +7,7 @@ export default function Home() {
         <a href="/audit">Audit page<br /><small className="muted" style={{ fontWeight: 500 }}>Upload calls and run audits</small></a>
         <a href="/dashboard">Dashboard<br /><small className="muted" style={{ fontWeight: 500 }}>Scores and charts (admin)</small></a>
         <a href="/calls">Audited calls<br /><small className="muted" style={{ fontWeight: 500 }}>Each call and agent (admin)</small></a>
+        <a href="/mistakes">AI Mistakes<br /><small className="muted" style={{ fontWeight: 500 }}>What the AI found wrong (admin)</small></a>
         <a href="/followups">Follow-ups<br /><small className="muted" style={{ fontWeight: 500 }}>Trainer and TL actions (admin)</small></a>
         <a href="/settings">Settings<br /><small className="muted" style={{ fontWeight: 500 }}>Agents, parameters, emails (admin)</small></a>
       </div>

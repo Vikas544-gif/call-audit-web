@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useStore, api, colr, avg, uniq } from "../components/data";
+import { useStore, api, colr, avg, uniq, fmtDur } from "../components/data";
 import { Gate, AdminNav, Modal, Detail } from "../components/ui";
 import { FilterBar, useFilters } from "../components/filters";
 import { infoOf } from "../../lib/filters";
@@ -80,7 +80,7 @@ export default function CallsPage() {
                     <div className="h"><div><b>{h.rep}</b><small>{i.center} &middot; TL: {i.tl || "-"}</small></div><span className="score" style={{ background: colr(h.total) }}>{h.total}%</span></div>
                     <div className="cu">{h.customer || "Customer not named"}{h.contactId ? <span className="muted" style={{ fontWeight: 600 }}> &middot; ID {h.contactId}</span> : null}</div>
                     <div className="m"><span>Audit {n} of {mine.length}</span><span style={{ color: nm ? "var(--bad)" : "var(--good)" }}>{nm} mistake{nm === 1 ? "" : "s"}</span><span>{wk} weak</span><span>{h.outcome}</span>{h.cmp && h.cmp.delta != null && <span style={{ color: h.cmp.delta > 0 ? "var(--good)" : h.cmp.delta < 0 ? "var(--bad)" : "var(--mute)" }}>{h.cmp.delta > 0 ? "▲" : h.cmp.delta < 0 ? "▼" : "–"} {Math.abs(h.cmp.delta)} pts</span>}</div>
-                    <small style={{ marginTop: 8 }}>{(h.date || "").split(",")[0]} &middot; {h.type}{h.file ? " · " + h.file : ""}</small>
+                    <small style={{ marginTop: 8 }}>{(h.date || "").split(",")[0]} &middot; {h.type}{h.durationSec ? " · " + fmtDur(h.durationSec) + " min" : ""}{h.file ? " · " + h.file : ""}</small>
                   </div>);
               })}
             </div>
