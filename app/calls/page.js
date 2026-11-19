@@ -56,8 +56,8 @@ export default function CallsPage() {
             {!agents.length && <div className="empty">No audits match these filters.</div>}
             <div className="cg">
               {agents.map((a) => (
-                <div key={a.name} className="ag" style={{ borderLeftColor: colr(a.avg), cursor: "pointer" }} onClick={() => { F.apply({ fa: [a.name] }); setView("calls"); }}>
-                  <div className="row" style={{ marginBottom: 4 }}><div style={{ flex: 1 }}><h4>{a.name}</h4><small>{a.center} &middot; TL: {a.tl || "-"}</small></div><span className="score" style={{ background: colr(a.avg) }}>{a.avg}%</span></div>
+                <div key={a.name} className="ag" style={{ cursor: "pointer" }} onClick={() => { F.apply({ fa: [a.name] }); setView("calls"); }}>
+                  <div className="row" style={{ marginBottom: 4 }}><div style={{ flex: 1 }}><h4>{a.name}</h4><small>{a.center}, TL {a.tl || "-"}</small></div><span className="score" style={{ background: colr(a.avg) }}>{a.avg}%</span></div>
                   <div className="m row" style={{ gap: 6, fontSize: 12, marginBottom: 6 }}>
                     <span className="tag own">{a.n} audit{a.n === 1 ? "" : "s"}</span><span className="tag own">Last {a.last}%</span>
                     {a.delta != null && <span className={"tag " + (a.delta > 0 ? "on1" : a.delta < 0 ? "bad" : "off1")}>{a.delta > 0 ? "▲" : a.delta < 0 ? "▼" : "–"} {Math.abs(a.delta)} pts</span>}
@@ -76,11 +76,11 @@ export default function CallsPage() {
                 const mine = hist.filter((x) => x.rep === h.rep).sort((x, y) => (x.ts || 0) - (y.ts || 0));
                 const n = mine.findIndex((x) => x.ts === h.ts) + 1, i = info(h), nm = (h.mistakes || []).length, wk = weakOf(h).length;
                 return (
-                  <div key={h.ts} className="cd" style={{ borderLeftColor: colr(h.total) }} onClick={() => setCur(h)}>
-                    <div className="h"><div><b>{h.rep}</b><small>{i.center} &middot; TL: {i.tl || "-"}</small></div><span className="score" style={{ background: colr(h.total) }}>{h.total}%</span></div>
-                    <div className="cu">{h.customer || "Customer not named"}{h.contactId ? <span className="muted" style={{ fontWeight: 600 }}> &middot; ID {h.contactId}</span> : null}</div>
+                  <div key={h.ts} className="cd" onClick={() => setCur(h)}>
+                    <div className="h"><div><b>{h.customer || "Customer not named"}</b><small>{h.contactId ? "ID " + h.contactId : "No contact ID"}</small></div><span className="score" style={{ background: colr(h.total) }}>{h.total}%</span></div>
+                    <div className="cu">{h.rep}<span className="muted" style={{ fontWeight: 400 }}>, {i.center}, TL {i.tl || "-"}</span></div>
                     <div className="m"><span>Audit {n} of {mine.length}</span><span style={{ color: nm ? "var(--bad)" : "var(--good)" }}>{nm} mistake{nm === 1 ? "" : "s"}</span><span>{wk} weak</span><span>{h.outcome}</span>{h.cmp && h.cmp.delta != null && <span style={{ color: h.cmp.delta > 0 ? "var(--good)" : h.cmp.delta < 0 ? "var(--bad)" : "var(--mute)" }}>{h.cmp.delta > 0 ? "▲" : h.cmp.delta < 0 ? "▼" : "–"} {Math.abs(h.cmp.delta)} pts</span>}</div>
-                    <small style={{ marginTop: 8 }}>{(h.date || "").split(",")[0]} &middot; {h.type}{h.durationSec ? " · " + fmtDur(h.durationSec) + " min" : ""}{h.file ? " · " + h.file : ""}</small>
+                    <small style={{ marginTop: 10, display: "flex", gap: 12, flexWrap: "wrap" }}><span>{(h.date || "").split(",")[0]}</span><span>{h.type}</span>{h.durationSec ? <span>{fmtDur(h.durationSec)} min</span> : null}</small>
                   </div>);
               })}
             </div>

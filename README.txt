@@ -45,6 +45,8 @@ HOW A CALL IS HANDLED
    (Draft = QA inbox gets a ready draft, Auto = goes to the agent directly, Off).
 5. Everything shows on the Dashboard under Follow-ups.
 
+DESIGN: light header with a plain nav, one light filter panel (active filters show as chips you can remove), numbers in one ruled strip, charts on one ruled sheet. Only weak (below the weak limit) and strong (80%+) cells are coloured. Each call opens with a call timeline: two lanes (Agent, Customer), the late-opening gap and the mistakes at their time. Font: IBM Plex Sans.
+
 THEMES: the "Theme" button at the top: 8 themes (Light, Dark, Ocean, Forest, Sunset, Purple, Slate, High contrast) and your own accent colour. Remembered per browser.
 
 CALL SCRIPT: every audit saves the call script with [mm:ss] times and Agent / Customer labels. Open a call and press "Show call script" (mistake lines are marked red).

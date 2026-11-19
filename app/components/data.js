@@ -3,8 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { DEFAULT_PARAMS, CENTERS, MCFG } from "../../lib/defaults";
 
 export { TENURES, STRATS, STATUSES, CTYPES } from "../../lib/defaults";
-export const colr = (p) => (p >= 75 ? "#0b9a72" : p >= 50 ? "#d29a1f" : "#d4493a");
-export const heat = (p) => (p == null ? "transparent" : p >= 75 ? "rgba(11,154,114,.22)" : p >= 50 ? "rgba(210,154,31,.24)" : "rgba(212,73,58,.24)");
+export const colr = (p) => (p >= 75 ? "#14825f" : p >= 50 ? "#c9890f" : "#c73a2e");
+// only the cells that matter get a colour: weak (below the weak limit) and strong (80 and above)
+export const heat = (p, weak = 60) => (p == null ? "transparent" : p < weak ? "rgba(199,58,46,.16)" : p >= 80 ? "rgba(20,130,95,.16)" : "transparent");
 export const rd = (n) => Math.round(n * 10) / 10;
 export const avg = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
 export const uniq = (a) => [...new Set(a.filter(Boolean))].sort();

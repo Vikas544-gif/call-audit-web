@@ -15,7 +15,7 @@ export default function AuditPage() {
   const [agent, setAgent] = useState(""), [customer, setCustomer] = useState(""), [contactId, setContactId] = useState("");
   const [callType, setCallType] = useState(CTYPES[0]), [strategy, setStrategy] = useState("Auto"), [cstatus, setCstatus] = useState("Auto");
   const [files, setFiles] = useState([]), [fileKey, setFileKey] = useState(0), [jobs, setJobs] = useState([]), [busy, setBusy] = useState(false), [err, setErr] = useState("");
-  const [mine, setMine] = useState([]), [cur, setCur] = useState(null);
+  const [mine, setMine] = useState([]), [cur, setCur] = useState(null), [drag, setDrag] = useState(false);
   const urls = useRef({}), [dur, setDur] = useState({}), [audioMap, setAudioMap] = useState({});
 
   // every chosen call gets a player and its length (read in the browser, nothing is uploaded for this)
@@ -131,7 +131,12 @@ export default function AuditPage() {
             <label>Strategy<select value={strategy} onChange={(e) => setStrategy(e.target.value)}><option value="Auto">Auto (AI decides)</option>{STRATS.map((x) => <option key={x}>{x}</option>)}</select></label>
             <label>Call status<select value={cstatus} onChange={(e) => setCstatus(e.target.value)}><option value="Auto">Auto (AI decides)</option>{STATUSES.map((x) => <option key={x}>{x}</option>)}</select></label>
           </div>
-          <input key={fileKey} type="file" accept="audio/*" multiple onChange={(e) => setFiles([...e.target.files])} disabled={busy} />
+          <label className={"drop" + (drag ? " on" : "")} onDragOver={(e) => { e.preventDefault(); if (!busy) setDrag(true); }} onDragLeave={() => setDrag(false)}
+            onDrop={(e) => { e.preventDefault(); setDrag(false); if (busy) return; const fl = [...e.dataTransfer.files].filter((f) => /^audio\//.test(f.type) || /\.(mp3|wav|m4a|aac|ogg|amr|mp4)$/i.test(f.name)); if (fl.length) setFiles(fl); }}>
+            <input className="vh" key={fileKey} type="file" accept="audio/*" multiple onChange={(e) => setFiles([...e.target.files])} disabled={busy} />
+            <b>{files.length ? "Choose different recordings" : "Drop call recordings here"}</b>
+            <span>or click to choose files. MP3, WAV, M4A. You can add many calls at once.</span>
+          </label>
           {files.length > 0 && (
             <div>
               <div className="muted" style={{ marginTop: 8, fontSize: 13 }}><b>{files.length}</b> {files.length === 1 ? "call" : "calls"} selected{totalSec > 0 ? <span> &middot; total <b>{Math.round(totalSec / 60)} min</b></span> : null}. You can listen to each call before you run the audit.</div>
@@ -162,9 +167,9 @@ export default function AuditPage() {
           {!mine.length && <div className="empty">Audits you run will show here. Click one to see the mistakes and the call script.</div>}
           <div className="cg">
             {mine.map((h) => { const nm = (h.mistakes || []).length + (h.aiMistakes || []).length, wk = weakParams(h, S.params, S.mcfg.weakPct).length; return (
-              <div key={h.ts} className="cd" style={{ borderLeftColor: colr(h.total) }} onClick={() => setCur(h)}>
+              <div key={h.ts} className="cd" onClick={() => setCur(h)}>
                 <div className="h"><div><b>{h.customer || "Customer not named"}</b><small>{h.contactId ? `Contact ID: ${h.contactId}` : "No contact ID"}</small></div><span className="score" style={{ background: colr(h.total) }}>{h.total}%</span></div>
-                <div className="cu muted">{h.rep} · {info(h).center}</div>
+                <div className="cu muted">{h.rep}, {info(h).center}</div>
                 <div className="m">{h.durationSec ? <span>{fmtDur(h.durationSec)} min</span> : null}{audioMap[h.ts] ? <span>🎧 Listen</span> : null}<span style={{ color: nm ? "var(--bad)" : "var(--good)" }}>{nm} mistake{nm === 1 ? "" : "s"}</span><span>{wk} weak parameter{wk === 1 ? "" : "s"}</span><span>{h.outcome}</span>{(h.delayPenalty || 0) > 0 && <span style={{ color: "var(--bad)" }}>Late opening</span>}{h.mail && h.mail.agent && <span>Email sent</span>}</div>
               </div>); })}
           </div>

@@ -5,7 +5,7 @@ import { parseTranscript, lineHasQuote } from "../../lib/transcript";
 import { weakParams, ownerOf } from "../../lib/defaults";
 
 export const Logo = () => (
-  <svg width="38" height="38" viewBox="0 0 38 38"><rect width="38" height="38" rx="10" fill="#0b9a72" /><g fill="#fff"><rect x="7" y="16" width="3.6" height="6" rx="1.8" /><rect x="13" y="11" width="3.6" height="16" rx="1.8" /><rect x="19" y="7" width="3.6" height="24" rx="1.8" /><rect x="25" y="13" width="3.6" height="12" rx="1.8" /><rect x="31" y="17" width="3.6" height="4" rx="1.8" /></g></svg>
+  <svg width="38" height="38" viewBox="0 0 38 38"><rect width="38" height="38" rx="10" style={{ fill: "var(--accent)" }} /><g fill="#fff"><rect x="7" y="16" width="3.6" height="6" rx="1.8" /><rect x="13" y="11" width="3.6" height="16" rx="1.8" /><rect x="19" y="7" width="3.6" height="24" rx="1.8" /><rect x="25" y="13" width="3.6" height="12" rx="1.8" /><rect x="31" y="17" width="3.6" height="4" rx="1.8" /></g></svg>
 );
 
 const THEMES = [["light", "Light", "#ffffff", "#0b7a5b"], ["dark", "Dark", "#151c27", "#19a57a"], ["ocean", "Ocean", "#eaf2fb", "#1a73e8"], ["forest", "Forest", "#eef4ef", "#1f8a4c"], ["sunset", "Sunset", "#fff4ec", "#e4572e"], ["purple", "Purple", "#f3effc", "#6d4aff"], ["slate", "Slate (dark)", "#1b2230", "#5b9cff"], ["contrast", "High contrast", "#ffffff", "#000000"]];
@@ -23,7 +23,7 @@ export function ThemePicker() {
   const clearAccent = () => { document.documentElement.style.removeProperty("--accent"); try { localStorage.removeItem("caa"); } catch {} setAcc(""); };
   return (
     <div className="thmw noprint">
-      <button className="thb" onClick={() => setOpen(!open)} aria-haspopup="true" aria-expanded={open}>🎨 Theme</button>
+      <button className="thb" onClick={() => setOpen(!open)} aria-haspopup="true" aria-expanded={open}><svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" style={{ marginRight: 7, verticalAlign: "-2px" }}><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" strokeWidth="1.6" /><path d="M8 1.8a6.2 6.2 0 0 1 0 12.4z" fill="currentColor" /></svg>Theme</button>
       {open && (
         <div className="thp" role="dialog" aria-label="Theme">
           <div className="thg">{THEMES.map(([k, n, bg, ac]) => <button key={k} className={"thi" + (t === k ? " on" : "")} onClick={() => pick(k)}><span className="thsw" style={{ background: bg, borderColor: ac }}><i style={{ background: ac }} /></span>{n}</button>)}</div>
@@ -40,6 +40,7 @@ export function Lock({ onUnlock, wrong, title }) {
   const [p, setP] = useState("");
   return (
     <div className="lock">
+      <div className="lb"><Logo />Sales Call Audit</div>
       <h3 style={{ marginTop: 0 }}>{title}</h3>
       <p className="muted" style={{ marginTop: 0 }}>Enter the password to continue.</p>
       <input type="password" autoFocus style={{ width: "100%" }} placeholder="Password" value={p} onChange={(e) => setP(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && p) onUnlock(p); }} />
@@ -52,6 +53,7 @@ export function Lock({ onUnlock, wrong, title }) {
 export function Setup({ error }) {
   return (
     <div className="lock" style={{ maxWidth: 520 }}>
+      <div className="lb"><Logo />Sales Call Audit</div>
       <h3 style={{ marginTop: 0 }}>{error ? "Could not load" : "Database is not connected"}</h3>
       {error ? <p>{error}</p> : <p>Connect <b>Upstash Redis</b> in Vercel so everyone shares the same data: Vercel &gt; Storage &gt; Create Database &gt; Upstash (Redis) &gt; connect to this project, then Redeploy.</p>}
     </div>
@@ -72,20 +74,29 @@ export function Ring({ p }) {
   );
 }
 
-const PAL = ["#118dff", "#7b8cff", "#e66c37", "#b24fc4", "#e044a7", "#744ec2", "#d9b300", "#d64550"];
+const PAL = ["#3346c8", "#14825f", "#c9890f", "#c2476b", "#6b7a90", "#8c5cc9", "#1c8f8a", "#a35c2e"];
+// known labels keep a meaningful colour (good = green, bad = red, neutral = grey)
+const LC = { "Interested": "#14825f", "Follow-up": "#3346c8", "Not Interested": "#c73a2e", "Not Connected": "#8a94a6", "Improved": "#14825f", "Declined": "#c73a2e", "No change": "#8a94a6", "First audit": "#8a94a6", "Done": "#14825f", "Pending": "#c9890f", "Trainer": "#3346c8", "Team Leader": "#c9890f", "New Lead": "#3346c8", "Work to Non Work": "#1c8f8a", "No Strategy": "#8a94a6" };
+const dcol = (label, i) => LC[label] || PAL[i % PAL.length];
 export function Combo({ data }) {
   if (!data.length) return <div className="empty">No data</div>;
-  const W = 440, H = 230, T = 30, B = 34, X = 14, n = data.length, sw = (W - 2 * X) / n, bw = Math.min(64, sw * 0.62);
+  const W = 440, H = 230, T = 26, B = 34, X = 14, n = data.length, sw = (W - 2 * X) / n, bw = Math.min(54, sw * 0.58);
   const mx = Math.max(...data.map((d) => d.n)) || 1, vs = data.map((d) => d.avg);
-  const lo = Math.max(0, Math.floor((Math.min(...vs) - 8) / 5) * 5), hi = Math.min(100, Math.ceil((Math.max(...vs) + 4) / 5) * 5);
-  const cx = (i) => X + (i + 0.5) * sw, by = (v) => H - B - (v / mx) * (H - B - T - 38), ly = (v) => H - B - ((v - lo) / (hi - lo || 1)) * (H - B - T - 10);
+  const lo = Math.max(0, Math.floor((Math.min(...vs) - 10) / 5) * 5), hi = Math.min(100, Math.ceil((Math.max(...vs) + 4) / 5) * 5);
+  const cx = (i) => X + (i + 0.5) * sw, by = (v) => H - B - (v / mx) * (H - B - T - 46), ly = (v) => H - B - ((v - lo) / (hi - lo || 1)) * (H - B - T - 10);
   let d = "";
   data.forEach((p, i) => { const x = cx(i), y = ly(p.avg); if (!i) d = `M${x},${y}`; else { const m = (cx(i - 1) + x) / 2; d += ` C${m},${ly(data[i - 1].avg)} ${m},${y} ${x},${y}`; } });
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto" }}>
-      {data.map((p, i) => <g key={i}><rect x={cx(i) - bw / 2} y={by(p.n)} width={bw} height={H - B - by(p.n)} fill="#118dff" rx="2" /><text className="ct" x={cx(i)} y={by(p.n) - 6} textAnchor="middle" fontSize="11" fontWeight="700">{p.n}</text><text className="ct2" x={cx(i)} y={H - 12} textAnchor="middle" fontSize="11" fontWeight="700">{p.label.length > 14 ? p.label.slice(0, 13) + "…" : p.label}</text></g>)}
-      {n > 1 && <path d={d} fill="none" stroke="#e0a63b" strokeWidth="2.4" />}
-      {data.map((p, i) => <g key={"l" + i}><circle cx={cx(i)} cy={ly(p.avg)} r="3.4" fill="#e0a63b" /><text className="ct halo" x={cx(i)} y={ly(p.avg) - 8} textAnchor="middle" fontSize="10.5" fontWeight="700" strokeWidth="3" paintOrder="stroke">{p.avg}%</text></g>)}
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto" }} role="img" aria-label="Audits and average score">
+      <line x1={X} x2={W - X} y1={H - B} y2={H - B} style={{ stroke: "var(--line)" }} />
+      {data.map((p, i) => { const h = H - B - by(p.n), inside = h >= 22; return (
+        <g key={i}>
+          <rect x={cx(i) - bw / 2} y={by(p.n)} width={bw} height={h} rx="3" style={{ fill: "var(--accent)", opacity: 0.88 }} />
+          <text x={cx(i)} y={inside ? H - B - 7 : by(p.n) - 5} textAnchor="middle" fontSize="12" fontWeight="600" style={{ fill: inside ? "#fff" : "var(--text)" }}>{p.n}</text>
+          <text className="ct2" x={cx(i)} y={H - 13} textAnchor="middle" fontSize="11.5">{p.label.length > 13 ? p.label.slice(0, 12) + "…" : p.label}</text>
+        </g>); })}
+      {n > 1 && <path d={d} fill="none" stroke="#c9890f" strokeWidth="2.2" />}
+      {data.map((p, i) => <g key={"l" + i}><circle cx={cx(i)} cy={ly(p.avg)} r="3.6" fill="#c9890f" stroke="var(--card)" strokeWidth="1.5" /><text className="ct halo" x={cx(i)} y={ly(p.avg) - 9} textAnchor="middle" fontSize="11.5" fontWeight="600" strokeWidth="3" paintOrder="stroke">{Math.round(p.avg)}%</text></g>)}
     </svg>
   );
 }
@@ -97,19 +108,19 @@ export function Donut({ data }) {
     <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
       <div style={{ position: "relative", width: 132, height: 132, flex: "none" }}>
         <svg width="132" height="132" viewBox="0 0 132 132" style={{ transform: "rotate(-90deg)" }}>
-          {dd.map((d, i) => { const len = (d.n / tot) * C, el = <circle key={d.label} cx="66" cy="66" r={r} fill="none" stroke={PAL[i % PAL.length]} strokeWidth="20" strokeDasharray={`${len} ${C - len}`} strokeDashoffset={-off} />; off += len; return el; })}
+          {dd.map((d, i) => { const len = (d.n / tot) * C, el = <circle key={d.label} cx="66" cy="66" r={r} fill="none" stroke={dcol(d.label, i)} strokeWidth="20" strokeDasharray={`${len} ${C - len}`} strokeDashoffset={-off} />; off += len; return el; })}
         </svg>
         <b style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 600 }}>{tot}</b>
       </div>
       <div style={{ fontSize: 13, flex: 1, minWidth: 130 }}>
-        {dd.map((d, i) => <div key={d.label} style={{ margin: "4px 0", display: "flex", alignItems: "center", gap: 8 }}><span style={{ width: 10, height: 10, borderRadius: 9, background: PAL[i % PAL.length], flex: "none" }} /><span style={{ fontWeight: 600 }}>{d.label}</span><span className="muted" style={{ marginLeft: "auto" }}>{d.n} ({rd((d.n / tot) * 100)}%)</span></div>)}
+        {dd.map((d, i) => <div key={d.label} style={{ margin: "4px 0", display: "flex", alignItems: "center", gap: 8 }}><span style={{ width: 10, height: 10, borderRadius: 9, background: dcol(d.label, i), flex: "none" }} /><span style={{ fontWeight: 500 }}>{d.label}</span><span className="muted" style={{ marginLeft: "auto" }}>{d.n} ({rd((d.n / tot) * 100)}%)</span></div>)}
       </div>
     </div>
   );
 }
 export function HBars({ data }) {
   if (!data.length) return <div className="empty">No data</div>;
-  return <div style={{ maxHeight: 330, overflow: "auto", paddingRight: 6 }}>{data.map((d) => <div key={d.label} className="hb"><label title={d.label}>{d.label}</label><i><s style={{ width: `${d.v}%`, background: "#118dff" }} /></i><b>{d.v}%</b></div>)}</div>;
+  return <div style={{ maxHeight: 330, overflow: "auto", paddingRight: 6 }}>{data.map((d) => <div key={d.label} className="hb"><label title={d.label}>{d.label}</label><i><s style={{ width: `${d.v}%` }} /></i><b>{d.v}%</b></div>)}</div>;
 }
 
 export function Slicer({ title, opts, sel, onChange }) {
@@ -141,36 +152,64 @@ const At = ({ v }) => {
     : <span className="tag own" style={{ marginLeft: 6, fontSize: 11 }}>{v}</span>;
 };
 
-function ScriptBox({ r, preset }) {
-  const [text, setText] = useState(preset || ""), [st, setSt] = useState(preset ? "ok" : "idle"), [open, setOpen] = useState(false);
-  useEffect(() => { setText(preset || ""); setSt(preset ? "ok" : "idle"); setOpen(false); }, [r.ts, preset]);
-  const show = async () => {
-    setOpen(true);
-    if (text) return;
-    setSt("loading");
-    try {
-      const res = await api("/api/script?ts=" + r.ts);
-      const j = await res.json();
-      if (!res.ok || !j.transcript) throw new Error(j.error || "Script is not available for this call");
-      setText(j.transcript); setSt("ok");
-    } catch (e) { setSt("err:" + e.message); }
-  };
+const mmss = (t) => `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
+
+function ScriptBox({ r, text, loading }) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => { setOpen(false); }, [r.ts]);
   const seek = useContext(SeekCtx);
   const lines = parseTranscript(text);
   const quotes = [...(r.mistakes || []), ...(r.aiMistakes || []), ...(r.flags || [])].map((m) => m.quote).filter(Boolean);
   const dl = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: "text/plain" })); a.download = `call-script-${(r.rep || "call").replace(/\s+/g, "-")}-${r.ts}.txt`; a.click(); };
   return (
     <div className="c"><H3>Call script</H3>
-      {!open && <button className="g" onClick={show}>Show call script</button>}
-      {open && st === "loading" && <span className="muted">Loading the script...</span>}
-      {open && st.startsWith("err:") && <span style={{ color: "var(--bad)" }}>{st.slice(4)}</span>}
-      {open && st === "ok" && (
+      {!open && <button className="g" onClick={() => setOpen(true)}>Show call script</button>}
+      {open && !text && <span className="muted">{loading ? "Loading the script..." : "The script is not available for this call."}</span>}
+      {open && text && (
         <div>
           <div className="row"><button className="g" onClick={() => navigator.clipboard && navigator.clipboard.writeText(text)}>Copy script</button><button className="g" onClick={dl}>Download (.txt)</button><span className="muted" style={{ fontSize: 13 }}>Lines with a mistake are marked in red.</span></div>
           <div className="scr">
-            {lines.length ? lines.map((l, i) => <div key={i} className={"ln" + (lineHasQuote(l.text, quotes) ? " hit" : "") + (seek ? " pl" : "")} title={seek ? "Play from here" : undefined} onClick={seek ? () => seek(l.t) : undefined}><span className="tm">{String(Math.floor(l.t / 60)).padStart(2, "0")}:{String(l.t % 60).padStart(2, "0")}</span><span className={"who" + (l.who === "Agent" ? " ag" : "")}>{l.who}</span><span>{l.text}</span></div>) : <div style={{ whiteSpace: "pre-wrap" }}>{text}</div>}
+            {lines.length ? lines.map((l, i) => <div key={i} className={"ln" + (lineHasQuote(l.text, quotes) ? " hit" : "") + (seek ? " pl" : "")} title={seek ? "Play from here" : undefined} onClick={seek ? () => seek(l.t) : undefined}><span className="tm">{mmss(l.t)}</span><span className={"who" + (l.who === "Agent" ? " ag" : "")}>{l.who}</span><span>{l.text}</span></div>) : <div style={{ whiteSpace: "pre-wrap" }}>{text}</div>}
           </div>
         </div>)}
+    </div>
+  );
+}
+
+// The call as two lanes over time: where each person spoke, where the mistakes are, and the gap before the agent opened.
+function CallTimeline({ r, text }) {
+  const seek = useContext(SeekCtx);
+  const L = parseTranscript(text);
+  if (L.length < 2) return null;
+  const words = (x) => String(x || "").trim().split(/\s+/).filter(Boolean).length;
+  const last = L[L.length - 1];
+  const total = Math.max(r.durationSec || 0, last.t + Math.max(3, words(last.text) / 2.6), 10);
+  const pos = (t) => `${Math.min(100, Math.max(0, (t / total) * 100))}%`;
+  const blocks = L.map((l, i) => { const next = L[i + 1] ? L[i + 1].t : total; return { who: l.who, t: l.t, len: Math.max(1.2, Math.min(next - l.t, words(l.text) / 2.6 + 0.8)) }; });
+  const marks = [
+    ...(r.mistakes || []).map((m) => ({ at: toSec(m.at), label: m.mistake, hi: !!m.auto })),
+    ...(r.aiMistakes || []).map((m) => ({ at: toSec(m.at), label: m.mistake, hi: m.severity === "High" })),
+    ...(r.flags || []).map((m) => ({ at: toSec(m.at), label: m.issue, hi: true })),
+  ].filter((m) => m.at != null && m.at <= total);
+  const fa = L.find((x) => x.who === "Agent"), fc = L.find((x) => x.who === "Customer");
+  const delay = r.openingDelay != null ? r.openingDelay : fa && fc ? Math.max(0, fa.t - (fc.t < fa.t ? fc.t : 0)) : null;
+  const gap = fa && delay != null && delay >= 3 ? { from: Math.max(0, fa.t - delay), to: fa.t } : null;
+  const lane = (who, cls) => (
+    <div className="tl-lane"><span className="tl-name">{who}</span>
+      <div className={"tl-bar " + cls}>
+        {blocks.filter((b) => b.who === who).map((b, i) => <b key={i} style={{ left: pos(b.t), width: `${(b.len / total) * 100}%` }} />)}
+        {who === "Agent" && gap && <div className="tl-gap" style={{ left: pos(gap.from), width: `${((gap.to - gap.from) / total) * 100}%` }} title={`The agent started speaking ${delay} seconds after the customer picked up`}>{delay}s</div>}
+      </div>
+    </div>
+  );
+  return (
+    <div className="c tl"><H3>Call timeline</H3>
+      <div className="tl-key"><span><i style={{ background: "var(--accent)" }} />Agent speaking</span><span><i style={{ background: "color-mix(in srgb, var(--mute) 70%, transparent)" }} />Customer speaking</span><span><i style={{ background: "var(--warn)" }} />Mistake</span><span><i style={{ background: "var(--bad)" }} />Serious mistake or late opening</span></div>
+      <div className="tl-wrap">
+        <div className="tl-marks">{marks.map((m, i) => <button key={i} className={"tl-m" + (m.hi ? " hi" : "") + (seek ? " pl" : "")} style={{ left: pos(m.at) }} title={`${mmss(m.at)}  ${m.label}`} aria-label={`${mmss(m.at)} ${m.label}`} onClick={seek ? () => seek(m.at) : undefined} />)}</div>
+        {lane("Agent", "ag")}{lane("Customer", "cu")}
+        <div className="tl-axis">{[0, 0.25, 0.5, 0.75, 1].map((f) => <span key={f}>{mmss(total * f)}</span>)}</div>
+      </div>
     </div>
   );
 }
@@ -181,6 +220,17 @@ const resTag = { yes: "on1", partial: "warn1", no: "bad" };
 
 export function Detail({ r, info, params, weakPct, taskMap, onSend, busy, script, audioUrl }) {
   const audioRef = useRef(null);
+  const [scriptText, setScriptText] = useState(script || r.transcript || ""), [scriptLoading, setScriptLoading] = useState(false);
+  useEffect(() => {
+    let on = true;
+    const pre = script || r.transcript || "";
+    setScriptText(pre);
+    if (!pre) {
+      setScriptLoading(true);
+      api("/api/script?ts=" + r.ts).then(async (res) => { const j = await res.json(); if (on && res.ok && j.transcript) setScriptText(j.transcript); }).catch(() => {}).finally(() => { if (on) setScriptLoading(false); });
+    }
+    return () => { on = false; };
+  }, [r.ts, script, r.transcript]);
   const seekFn = audioUrl ? (t) => { const a = audioRef.current; if (a) { a.currentTime = t; const p = a.play(); if (p && p.catch) p.catch(() => {}); } } : null;
   const weak = weakParams(r, params, weakPct);
   const mine = (r.tasks || []).map((t) => ({ ...t, ...(taskMap[t.id] || {}) }));
@@ -193,13 +243,14 @@ export function Detail({ r, info, params, weakPct, taskMap, onSend, busy, script
       <div className="c" style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
         <Ring p={r.total} />
         <div style={{ flex: 1, minWidth: 220 }}>
-          <b>{r.rep} · {info.center} · TL: {info.tl || "-"} · {r.outcome}</b>
-          <div style={{ margin: "4px 0", fontWeight: 700 }}>Customer: {r.customer || "-"}{r.contactId ? ` · Contact ID: ${r.contactId}` : ""}</div>
+          <div style={{ fontSize: 18, fontWeight: 600 }}>{r.rep} <span className="muted" style={{ fontSize: 14.5, fontWeight: 400, marginLeft: 6 }}>{info.center}, TL {info.tl || "-"}</span> <span className={"tag " + (r.outcome === "Likely Sale" ? "on1" : r.outcome === "Lost" ? "bad" : "warn1")} style={{ marginLeft: 6 }}>{r.outcome}</span></div>
+          <div style={{ margin: "6px 0" }}><span className="muted">Customer</span> <b>{r.customer || "-"}</b>{r.contactId ? <span><span className="muted" style={{ marginLeft: 14 }}>Contact ID</span> <b>{r.contactId}</b></span> : null}</div>
           {r.openingDelay != null && <div style={{ margin: "4px 0" }}><span className={"tag " + ((r.delayPenalty || 0) > 0 ? "bad" : "on1")}>Opening delay: {r.openingDelay}s{(r.delayPenalty || 0) > 0 ? ` (-${r.delayPenalty} points taken off the opening)` : " (OK)"}</span></div>}
           <p style={{ margin: "4px 0" }}>{r.summary}</p>
-          <small className="muted">{r.date} · {r.type} · {r.file}{r.durationSec ? ` · ${fmtDur(r.durationSec)} min` : ""}</small>
+          <small className="muted" style={{ display: "flex", gap: 14, flexWrap: "wrap" }}><span>{r.date}</span><span>{r.type}</span>{r.durationSec ? <span>{fmtDur(r.durationSec)} min</span> : null}<span>{r.file}</span></small>
         </div>
       </div>
+      <CallTimeline r={r} text={scriptText} />
       {audioUrl && <div className="c"><H3>Listen to the call</H3><audio ref={audioRef} controls preload="metadata" src={audioUrl} style={{ width: "100%" }} /><div className="muted" style={{ fontSize: 13, marginTop: 4 }}>Click a time (like ▶ 00:14) or a script line to play from there. This recording stays only in this browser tab. It is not saved on the server.</div></div>}
       {r.cmp && (
         <div className="c"><H3>Vs last call</H3>
@@ -250,7 +301,7 @@ export function Detail({ r, info, params, weakPct, taskMap, onSend, busy, script
       <div className="c"><H3>What went well</H3><L items={r.strengths} /></div>
       <div className="c"><H3>Missed opportunities</H3><L items={r.missed} /></div>
       <div className="c" style={{ borderLeft: "4px solid var(--good)" }}><H3>Steps to improve sales</H3><L items={r.tips} /></div>
-      <ScriptBox r={r} preset={script || r.transcript} />
+      <ScriptBox r={r} text={scriptText} loading={scriptLoading} />
     </div>
     </SeekCtx.Provider>
   );

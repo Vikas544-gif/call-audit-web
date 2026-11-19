@@ -50,7 +50,7 @@ export default function MistakesPage() {
           <span className="muted" style={{ fontSize: 13 }}>{src === "AI" ? "Mistakes the AI noticed on its own, not limited to the scoring parameters." : src === "Parameter" ? "Mistakes tied to a scoring parameter." : "Both kinds together."}</span>
         </div>
         <div className="kp">
-          {[["MISTAKES", pool.length, "#2f6bff"], ["HIGH SEVERITY", high, "#ef4444"], ["CALLS WITH MISTAKES", callsCount, "#f59e0b"], ["AGENTS AFFECTED", agentsAff, "#8b5cf6"], ["MOST COMMON", cats[0] ? cats[0].label : "-", "#10b981"]].map(([a, b, col]) => <div key={a} className="kc" style={{ borderColor: col }}><span>{a}</span><b style={{ color: col, fontSize: String(b).length > 8 ? 18 : 38, lineHeight: String(b).length > 8 ? "2.6" : undefined }}>{b}</b></div>)}
+          {[["Mistakes", pool.length], ["High severity", high, high ? "var(--bad)" : undefined], ["Calls with mistakes", callsCount], ["Agents affected", agentsAff], ["Most common", cats[0] ? cats[0].label : "-"]].map(([a, b, tone]) => <div key={a} className="kc"><span>{a}</span><b style={{ ...(tone ? { color: tone } : {}), ...(String(b).length > 9 ? { fontSize: 20, lineHeight: "40px" } : {}) }}>{b}</b></div>)}
         </div>
         <div className="cols" style={{ marginBottom: 14 }}>
           <div className="c"><h3>Mistakes by category</h3><CountBars data={cats.slice(0, 10)} /></div>

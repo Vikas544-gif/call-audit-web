@@ -26,7 +26,7 @@ export default function FollowupsPage() {
       <AdminNav active="/followups" S={S} sub="Follow-ups" />
       <div className="main">
         <div className="kp">
-          {[["TRAINER: PENDING", cnt("Trainer", false), "#f59e0b"], ["TRAINER: DONE", cnt("Trainer", true), "#10b981"], ["TL: PENDING", cnt("TL", false), "#f59e0b"], ["TL: DONE", cnt("TL", true), "#10b981"], ["AGENT ACKNOWLEDGED", tasks.filter((t) => t.ackAt).length, "#8b5cf6"]].map(([a, b, col]) => <div key={a} className="kc" style={{ borderColor: col }}><span>{a}</span><b style={{ color: col }}>{b}</b></div>)}
+          {[["Trainer: pending", cnt("Trainer", false)], ["Trainer: done", cnt("Trainer", true)], ["TL: pending", cnt("TL", false)], ["TL: done", cnt("TL", true)], ["Agent acknowledged", tasks.filter((t) => t.ackAt).length]].map(([a, b]) => <div key={a} className="kc"><span>{a}</span><b>{b}</b></div>)}
         </div>
         <div className="c">
           <div className="row">

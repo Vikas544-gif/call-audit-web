@@ -44,9 +44,9 @@ export default function DashboardPage() {
     <Gate S={S} title="Dashboard">
       <AdminNav active="/dashboard" S={S} sub="Dashboard" />
       <div className="main">
-        <FilterBar F={F} title="Call Quality Audit Dashboard" sub="Executive summary" />
+        <FilterBar F={F} title="Call Quality Audit Dashboard" sub="How calls are scoring across centers, team leaders and agents" />
         <div className="kp">
-          {[["TOTAL AUDITS", list.length, "#2f6bff"], ["AVG QUALITY SCORE", list.length ? Math.round(avgAll) + "%" : "-", "#10b981"], ["MANDATORY STATEMENTS MET", mAvg == null ? "-" : Math.round(mAvg) + "%", "#8b5cf6"], ["AUDITS NEEDING FOLLOW-UP", needF, "#f59e0b"], ["FOLLOW-UPS PENDING", pending, "#06b6d4"]].map(([a, b, col]) => <div key={a} className="kc" style={{ borderColor: col }}><span>{a}</span><b style={{ color: col }}>{b}</b></div>)}
+          {[["Total audits", list.length], ["Average quality score", list.length ? Math.round(avgAll) + "%" : "-", list.length ? (avgAll >= 75 ? "var(--good)" : avgAll >= mcfg.weakPct ? undefined : "var(--bad)") : undefined], ["Mandatory statements met", mAvg == null ? "-" : Math.round(mAvg) + "%"], ["Audits needing follow-up", needF], ["Follow-ups pending", pending]].map(([a, b, tone]) => <div key={a} className="kc"><span>{a}</span><b style={tone ? { color: tone } : undefined}>{b}</b></div>)}
         </div>
         <div className="gr">
           <div className="ch"><h4>Weekly Audits &amp; Avg Score</h4><Combo data={wkData} /></div>
@@ -72,9 +72,9 @@ export default function DashboardPage() {
             <button className="g" onClick={() => window.print()}>Print / PDF</button>
           </div>
           {!rows.length ? <div className="empty">No audits match these filters. Run an audit on the Audit page or press Reset filters.</div> : (
-            <div className="sc"><table className="t"><thead><tr><th className="l">Center</th><th className="l">TL Name</th><th className="l">Agent Name</th><th>Status</th><th>Audit Count</th>{params.map((p) => <th key={p.label}>{p.label}<br />(weight {p.max})</th>)}<th>Total %</th></tr></thead>
+            <div className="sc"><table className="t dense"><thead><tr><th className="l">Center</th><th className="l">TL Name</th><th className="l">Agent Name</th><th>Status</th><th>Audit Count</th>{params.map((p) => <th key={p.label}>{p.label}<small>weight {p.max}</small></th>)}<th>Total %</th></tr></thead>
               <tbody>
-                {rows.map((r) => <tr key={r.a}><td className="l">{r.center}</td><td className="l">{r.tl}</td><td className="l"><b>{r.a}</b></td><td><span className={"tag " + (r.active ? "on1" : "off1")}>{r.active ? "Active" : "Inactive"}</span></td><td>{r.n}</td>{r.cells.map((c, i) => <td key={i} style={{ background: heat(c == null ? null : c * 100) }}>{c == null ? "-" : pct(c * 100)}</td>)}<td style={{ background: heat(r.tot), fontWeight: 700 }}>{r.tot}%</td></tr>)}
+                {rows.map((r) => <tr key={r.a}><td className="l">{r.center}</td><td className="l">{r.tl}</td><td className="l"><b>{r.a}</b></td><td><span className={"tag " + (r.active ? "on1" : "off1")}>{r.active ? "Active" : "Inactive"}</span></td><td>{r.n}</td>{r.cells.map((c, i) => <td key={i} style={{ background: heat(c == null ? null : c * 100, mcfg.weakPct) }}>{c == null ? "-" : pct(c * 100)}</td>)}<td style={{ background: heat(r.tot, mcfg.weakPct), fontWeight: 600 }}>{r.tot}%</td></tr>)}
                 <tr><td className="l" colSpan={3}><b>TEAM AVERAGE</b></td><td></td><td><b>{list.length}</b></td>{colAvg.map((c, i) => <td key={i} style={{ fontWeight: 700 }}>{c == null ? "-" : pct(c * 100)}</td>)}<td style={{ fontWeight: 700 }}>{Math.round(avgAll)}%</td></tr>
               </tbody></table></div>
           )}
@@ -84,7 +84,7 @@ export default function DashboardPage() {
             {[["Center-wise", "center"], ["TL-wise", "tl"]].map(([t, k]) => (
               <div className="c" key={k}><h3>{t} summary</h3>
                 <table className="t"><thead><tr><th className="l">{k === "center" ? "Center" : "TL Name"}</th><th>Agents</th><th>Audits</th><th>Avg %</th></tr></thead>
-                  <tbody>{grp(k).map((g) => <tr key={g.g}><td className="l">{g.g}</td><td>{g.agents}</td><td>{g.n}</td><td style={{ background: heat(g.tot), fontWeight: 700 }}>{g.tot}%</td></tr>)}</tbody></table>
+                  <tbody>{grp(k).map((g) => <tr key={g.g}><td className="l">{g.g}</td><td>{g.agents}</td><td>{g.n}</td><td style={{ background: heat(g.tot, mcfg.weakPct), fontWeight: 600 }}>{g.tot}%</td></tr>)}</tbody></table>
               </div>))}
             <div className="c"><h3>Parameter-wise team average</h3>
               {params.map((p, i) => { const v = colAvg[i] == null ? 0 : colAvg[i] * 100; return <div className="bar" key={p.label}><label>{p.label}</label><i><s style={{ width: `${v}%`, background: colr(v) }} /></i><b>{Math.round(v)}%</b></div>; })}
