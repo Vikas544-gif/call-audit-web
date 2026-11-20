@@ -118,6 +118,19 @@ export function Donut({ data }) {
     </div>
   );
 }
+// share of calls as one bar (instead of a pie): the length of each part is its share
+export function MixBar({ data }) {
+  const tot = data.reduce((x, d) => x + d.n, 0);
+  if (!tot) return <div className="empty">No data</div>;
+  const dd = [...data].sort((a, b) => b.n - a.n);
+  return (
+    <div>
+      <div className="mixbar" role="img" aria-label="Share of calls">{dd.map((d, i) => <i key={d.label} style={{ flex: d.n, background: dcol(d.label, i) }} title={`${d.label}: ${d.n}`} />)}</div>
+      <ul className="mixkey">{dd.map((d, i) => <li key={d.label}><span style={{ background: dcol(d.label, i) }} />{d.label}<b>{d.n}</b><em>{Math.round((d.n / tot) * 100)}%</em></li>)}</ul>
+    </div>
+  );
+}
+
 export function HBars({ data }) {
   if (!data.length) return <div className="empty">No data</div>;
   return <div style={{ maxHeight: 330, overflow: "auto", paddingRight: 6 }}>{data.map((d) => <div key={d.label} className="hb"><label title={d.label}>{d.label}</label><i><s style={{ width: `${d.v}%` }} /></i><b>{d.v}%</b></div>)}</div>;
@@ -176,14 +189,15 @@ function ScriptBox({ r, text, loading }) {
   );
 }
 
-// The call as two lanes over time: where each person spoke, where the mistakes are, and the gap before the agent opened.
-function CallTimeline({ r, text }) {
+// The call as two lanes over time, with the player built in: play, speed, a moving playhead, and a click on the lanes jumps there.
+function CallTimeline({ r, text, audio }) {
   const seek = useContext(SeekCtx);
   const L = parseTranscript(text);
-  if (L.length < 2) return null;
+  const has = L.length >= 2;
+  if (!has && !(audio && audio.state !== "none")) return null;
   const words = (x) => String(x || "").trim().split(/\s+/).filter(Boolean).length;
   const last = L[L.length - 1];
-  const total = Math.max(r.durationSec || 0, last.t + Math.max(3, words(last.text) / 2.6), 10);
+  const total = Math.max((audio && audio.pl.dur) || r.durationSec || 0, last ? last.t + Math.max(3, words(last.text) / 2.6) : 0, 10);
   const pos = (t) => `${Math.min(100, Math.max(0, (t / total) * 100))}%`;
   const blocks = L.map((l, i) => { const next = L[i + 1] ? L[i + 1].t : total; return { who: l.who, t: l.t, len: Math.max(1.2, Math.min(next - l.t, words(l.text) / 2.6 + 0.8)) }; });
   const marks = [
@@ -194,9 +208,14 @@ function CallTimeline({ r, text }) {
   const fa = L.find((x) => x.who === "Agent"), fc = L.find((x) => x.who === "Customer");
   const delay = r.openingDelay != null ? r.openingDelay : fa && fc ? Math.max(0, fa.t - (fc.t < fa.t ? fc.t : 0)) : null;
   const gap = fa && delay != null && delay >= 3 ? { from: Math.max(0, fa.t - delay), to: fa.t } : null;
+  const clickSeek = (e) => {
+    if (!seek) return;
+    const rc = e.currentTarget.getBoundingClientRect();
+    if (rc.width) seek(Math.max(0, Math.min(total, ((e.clientX - rc.left) / rc.width) * total)));
+  };
   const lane = (who, cls) => (
     <div className="tl-lane"><span className="tl-name">{who}</span>
-      <div className={"tl-bar " + cls}>
+      <div className={"tl-bar " + cls + (seek ? " pl" : "")} onClick={clickSeek}>
         {blocks.filter((b) => b.who === who).map((b, i) => <b key={i} style={{ left: pos(b.t), width: `${(b.len / total) * 100}%` }} />)}
         {who === "Agent" && gap && <div className="tl-gap" style={{ left: pos(gap.from), width: `${((gap.to - gap.from) / total) * 100}%` }} title={`The agent started speaking ${delay} seconds after the customer picked up`}>{delay}s</div>}
       </div>
@@ -204,12 +223,30 @@ function CallTimeline({ r, text }) {
   );
   return (
     <div className="c tl"><H3>Call timeline</H3>
-      <div className="tl-key"><span><i style={{ background: "var(--accent)" }} />Agent speaking</span><span><i style={{ background: "color-mix(in srgb, var(--mute) 70%, transparent)" }} />Customer speaking</span><span><i style={{ background: "var(--warn)" }} />Mistake</span><span><i style={{ background: "var(--bad)" }} />Serious mistake or late opening</span></div>
-      <div className="tl-wrap">
-        <div className="tl-marks">{marks.map((m, i) => <button key={i} className={"tl-m" + (m.hi ? " hi" : "") + (seek ? " pl" : "")} style={{ left: pos(m.at) }} title={`${mmss(m.at)}  ${m.label}`} aria-label={`${mmss(m.at)} ${m.label}`} onClick={seek ? () => seek(m.at) : undefined} />)}</div>
-        {lane("Agent", "ag")}{lane("Customer", "cu")}
-        <div className="tl-axis">{[0, 0.25, 0.5, 0.75, 1].map((f) => <span key={f}>{mmss(total * f)}</span>)}</div>
-      </div>
+      {audio && audio.state !== "none" && (
+        <div className="tl-ctl">
+          {audio.state === "loading" && <span className="muted">Loading the recording...</span>}
+          {audio.state === "err" && <span className="muted">The recording is not available. It may have expired or been deleted.</span>}
+          {audio.state === "ok" && <>
+            <button className="tl-play" onClick={audio.toggle} aria-label={audio.pl.playing ? "Pause" : "Play"}>
+              {audio.pl.playing ? <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="2" width="3.4" height="12" rx="1" fill="currentColor" /><rect x="9.6" y="2" width="3.4" height="12" rx="1" fill="currentColor" /></svg> : <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.2v11.6a.5.5 0 0 0 .77.42l9-5.8a.5.5 0 0 0 0-.84l-9-5.8A.5.5 0 0 0 4 2.2z" fill="currentColor" /></svg>}
+            </button>
+            <span className="tl-time">{mmss(audio.pl.cur)} <span className="muted">/ {mmss(total)}</span></span>
+            <select value={audio.pl.rate} onChange={(e) => audio.setRate(Number(e.target.value))} aria-label="Playback speed">{[1, 1.25, 1.5, 2].map((x) => <option key={x} value={x}>{x}x</option>)}</select>
+            <span className="muted tl-note">{audio.note}</span>
+            {audio.onDelete && <button className="g" style={{ padding: "3px 10px", fontSize: 12.5 }} onClick={audio.onDelete}>Delete recording</button>}
+          </>}
+        </div>)}
+      {has && <div className="tl-key"><span><i style={{ background: "var(--accent)" }} />Agent speaking</span><span><i style={{ background: "color-mix(in srgb, var(--mute) 70%, transparent)" }} />Customer speaking</span><span><i style={{ background: "var(--warn)" }} />Mistake</span><span><i style={{ background: "var(--bad)" }} />Serious mistake or late opening</span></div>}
+      {has && (
+        <div className="tl-wrap">
+          <div className="tl-marks">
+            {marks.map((m, i) => <button key={i} className={"tl-m" + (m.hi ? " hi" : "") + (seek ? " pl" : "")} style={{ left: pos(m.at) }} title={`${mmss(m.at)}  ${m.label}`} aria-label={`${mmss(m.at)} ${m.label}`} onClick={seek ? () => seek(m.at) : undefined} />)}
+            {audio && audio.state === "ok" && <div className="tl-ph" style={{ left: pos(audio.pl.cur) }} />}
+          </div>
+          {lane("Agent", "ag")}{lane("Customer", "cu")}
+          <div className="tl-axis">{[0, 0.25, 0.5, 0.75, 1].map((f) => <span key={f}>{mmss(total * f)}</span>)}</div>
+        </div>)}
     </div>
   );
 }
@@ -220,6 +257,19 @@ const resTag = { yes: "on1", partial: "warn1", no: "bad" };
 
 export function Detail({ r, info, params, weakPct, taskMap, onSend, busy, script, audioUrl }) {
   const audioRef = useRef(null);
+  const [audioSrc, setAudioSrc] = useState(audioUrl || ""), [audioSt, setAudioSt] = useState(audioUrl ? "ok" : r.hasAudio ? "loading" : "none");
+  const [pl, setPl] = useState({ cur: 0, dur: 0, playing: false, rate: 1 });
+  // the recording: either still open in this browser tab (audit page), or the saved one, fetched with a short-lived link
+  useEffect(() => {
+    let on = true;
+    setPl({ cur: 0, dur: 0, playing: false, rate: 1 });
+    if (audioUrl) { setAudioSrc(audioUrl); setAudioSt("ok"); }
+    else if (r.hasAudio) {
+      setAudioSrc(""); setAudioSt("loading");
+      api("/api/audio-url?ts=" + r.ts).then(async (res) => { const j = await res.json(); if (!on) return; if (res.ok && j.url) { setAudioSrc(j.url); setAudioSt("ok"); } else setAudioSt("err"); }).catch(() => { if (on) setAudioSt("err"); });
+    } else { setAudioSrc(""); setAudioSt("none"); }
+    return () => { on = false; };
+  }, [r.ts, audioUrl, r.hasAudio]);
   const [scriptText, setScriptText] = useState(script || r.transcript || ""), [scriptLoading, setScriptLoading] = useState(false);
   useEffect(() => {
     let on = true;
@@ -231,7 +281,7 @@ export function Detail({ r, info, params, weakPct, taskMap, onSend, busy, script
     }
     return () => { on = false; };
   }, [r.ts, script, r.transcript]);
-  const seekFn = audioUrl ? (t) => { const a = audioRef.current; if (a) { a.currentTime = t; const p = a.play(); if (p && p.catch) p.catch(() => {}); } } : null;
+  const seekFn = audioSt === "ok" && audioSrc ? (t) => { const a = audioRef.current; if (a) { a.currentTime = t; const p = a.play(); if (p && p.catch) p.catch(() => {}); } } : null;
   const weak = weakParams(r, params, weakPct);
   const mine = (r.tasks || []).map((t) => ({ ...t, ...(taskMap[t.id] || {}) }));
   const mand = r.mandatory || [];
@@ -250,8 +300,16 @@ export function Detail({ r, info, params, weakPct, taskMap, onSend, busy, script
           <small className="muted" style={{ display: "flex", gap: 14, flexWrap: "wrap" }}><span>{r.date}</span><span>{r.type}</span>{r.durationSec ? <span>{fmtDur(r.durationSec)} min</span> : null}<span>{r.file}</span></small>
         </div>
       </div>
-      <CallTimeline r={r} text={scriptText} />
-      {audioUrl && <div className="c"><H3>Listen to the call</H3><audio ref={audioRef} controls preload="metadata" src={audioUrl} style={{ width: "100%" }} /><div className="muted" style={{ fontSize: 13, marginTop: 4 }}>Click a time (like ▶ 00:14) or a script line to play from there. This recording stays only in this browser tab. It is not saved on the server.</div></div>}
+      {audioSrc && <audio ref={audioRef} src={audioSrc} preload="metadata" style={{ display: "none" }}
+        onTimeUpdate={(e) => setPl((p) => ({ ...p, cur: e.target.currentTime }))} onLoadedMetadata={(e) => setPl((p) => ({ ...p, dur: e.target.duration || 0 }))}
+        onPlay={() => setPl((p) => ({ ...p, playing: true }))} onPause={() => setPl((p) => ({ ...p, playing: false }))} onEnded={() => setPl((p) => ({ ...p, playing: false }))} />}
+      <CallTimeline r={r} text={scriptText} audio={audioSt === "none" ? null : {
+        state: audioSt, pl,
+        toggle: () => { const a = audioRef.current; if (!a) return; if (a.paused) { const pr = a.play(); if (pr && pr.catch) pr.catch(() => {}); } else a.pause(); },
+        setRate: (v) => { const a = audioRef.current; if (a) a.playbackRate = v; setPl((p) => ({ ...p, rate: v })); },
+        note: audioUrl ? "This recording stays only in this browser tab." : r.audioExp ? "Saved until " + new Date(r.audioExp).toLocaleDateString("en-GB") : "Saved recording",
+        onDelete: onSend && r.hasAudio && !audioUrl ? async () => { if (!window.confirm("Delete the saved recording of this call? This cannot be undone.")) return; const res = await api("/api/audio?ts=" + r.ts, { method: "DELETE" }); if (res.ok) { setAudioSt("none"); setAudioSrc(""); } } : null,
+      }} />
       {r.cmp && (
         <div className="c"><H3>Vs last call</H3>
           {r.cmp.delta == null ? <span className="muted">First audit for this agent. The comparison starts from the next call.</span> : (

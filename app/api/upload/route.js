@@ -9,7 +9,7 @@ export async function POST(req) {
       request: req,
       onBeforeGenerateToken: async (pathname, clientPayload) => {
         if (!roleOf(req, clientPayload || "")) throw new Error("locked");
-        return { allowedContentTypes: ["audio/*", "video/mp4"], maximumSizeInBytes: 200 * 1024 * 1024 };
+        return { allowedContentTypes: ["audio/*", "video/mp4"], maximumSizeInBytes: 200 * 1024 * 1024, addRandomSuffix: true };
       },
       onUploadCompleted: async () => {},
     });

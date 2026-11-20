@@ -58,14 +58,14 @@ export default function AuditPage() {
       const st = await api("/api/transcribe", { method: "POST", body: JSON.stringify({ url: blob.url }) });
       const sj = await st.json();
       if (!st.ok) throw new Error(sj.error || "Could not start the transcription");
-      let transcript = null;
-      for (let i = 0; i < 1200 && !transcript; i++) {
-        await sleep(i < 5 ? 1000 : 1500);
+      let transcript = null, kept = false;
+      for (let i = 0; i < 700 && !transcript; i++) {
+        await sleep(i < 5 ? 1000 : i < 25 ? 2000 : 3000); // quick at first, then calmer (fewer server calls on long calls)
         const pr = await api("/api/transcribe?id=" + encodeURIComponent(sj.id));
         const pj = await pr.json();
         if (!pr.ok) throw new Error(pj.error || "Transcription failed");
         if (pj.status === "error") throw new Error(pj.error || "Transcription failed");
-        if (pj.status === "completed") transcript = pj.transcript; else setJob(id, { msg: `Transcribing... ${el()}` });
+        if (pj.status === "completed") { transcript = pj.transcript; kept = !!pj.kept; } else setJob(id, { msg: `Transcribing... ${el()}` });
       }
       if (!transcript) throw new Error("Transcription is taking too long");
       setJob(id, { msg: `Scoring... ${el()}` });
@@ -74,7 +74,7 @@ export default function AuditPage() {
       if (!res.ok) throw new Error(j.error || "Audit failed");
       const r = composeAudit({ res: j.result, ag: agt, file: f.name, meta, params, mcfg, transcript: j.transcript, ts: nextTs(), date: new Date().toLocaleString("en-GB") });
       setJob(id, { msg: "Saving..." });
-      const sr = await api("/api/store", { method: "POST", body: JSON.stringify({ action: "audit", audit: r, transcript: j.transcript }) });
+      const sr = await api("/api/store", { method: "POST", body: JSON.stringify({ action: "audit", audit: r, transcript: j.transcript, audioId: kept ? sj.id : undefined }) });
       const sv = await sr.json();
       if (!sr.ok) throw new Error(sv.error || "Could not save the audit");
       const saved = sv.audit;

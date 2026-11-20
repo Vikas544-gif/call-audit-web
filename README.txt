@@ -45,7 +45,9 @@ HOW A CALL IS HANDLED
    (Draft = QA inbox gets a ready draft, Auto = goes to the agent directly, Off).
 5. Everything shows on the Dashboard under Follow-ups.
 
-DESIGN: light header with a plain nav, one light filter panel (active filters show as chips you can remove), numbers in one ruled strip, charts on one ruled sheet. Only weak (below the weak limit) and strong (80%+) cells are coloured. Each call opens with a call timeline: two lanes (Agent, Customer), the late-opening gap and the mistakes at their time. Font: IBM Plex Sans.
+DESIGN: the Dashboard opens with a big scoreboard (average score, the last weeks as bars, key numbers), then "Where calls lose points" (weakest first, with the weak limit), "Who must act", and a team board with one tile per agent (click a tile to see that agent's calls). Filters live in a side drawer (button "Filters"); active filters show as chips you can remove. Shares of calls are drawn as one bar. Only weak (below the weak limit) and strong (80%+) cells are coloured. Each call opens with a call timeline: two lanes (Agent, Customer), the late-opening gap, the mistakes at their time, and the player. Fonts: Archivo (big numbers, titles) and IBM Plex Sans.
+
+RECORDINGS: the uploaded call is kept for the days set in Settings > Call recordings (default 90, 0 = delete right after the script is made). Open any audited call and press play inside the call timeline: play/pause, speed, a moving playhead, click on a lane or a mistake or a script line to jump there. Admin only. The player gets a signed link that works for one hour (no password in the link). The file name in Vercel Blob is unguessable. Expired recordings are deleted by themselves. "Delete recording" in the call removes one by hand. Optional env var AUDIO_SECRET (any long text) is used to sign the links; if it is missing DASH_PASSWORD is used.
 
 THEMES: the "Theme" button at the top: 8 themes (Light, Dark, Ocean, Forest, Sunset, Purple, Slate, High contrast) and your own accent colour. Remembered per browser.
 

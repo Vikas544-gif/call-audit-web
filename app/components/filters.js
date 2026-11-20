@@ -25,8 +25,13 @@ export function useFilters(S) {
 
 export function FilterBar({ F, title, sub }) {
   const { f, V, apply } = F;
-  const [open, setOpen] = useState(true);
-  useEffect(() => { if (window.innerWidth < 900) setOpen(false); }, []);
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    const h = (e) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("keydown", h);
+    return () => document.removeEventListener("keydown", h);
+  }, [open]);
   const sel = (label, key, opts) => <label key={key}>{label}<select value={f[key]} onChange={(e) => apply({ [key]: e.target.value })}><option value="All">All</option>{opts.map((x) => <option key={x}>{x}</option>)}</select></label>;
   const chips = [
     ...f.fc.map((x) => ({ k: "c" + x, t: "Center " + x, rm: () => apply({ fc: f.fc.filter((y) => y !== x) }) })),
@@ -40,27 +45,34 @@ export function FilterBar({ F, title, sub }) {
   ];
   return (
     <div className="band">
-      <div className="pgh"><h2>{title}</h2><p>{sub}</p></div>
-      <button className="g ftoggle noprint" onClick={() => setOpen(!open)}>{open ? "Hide filters" : "Show filters"}</button>
-      <div className={"fpanel" + (open ? "" : " closed")}>
-        <div className="slg noprint">
-          <Slicer title="Center" opts={V.centerOpts} sel={f.fc} onChange={(v) => apply({ fc: v })} />
-          <Slicer title="Team Leader" opts={V.tlOpts} sel={V.ftE} onChange={(v) => apply({ ft: v })} />
-          <Slicer title="Agent" opts={V.agOpts} sel={V.faE} onChange={(v) => apply({ fa: v })} />
-        </div>
-        <div className="flt noprint">
-          <label style={{ maxWidth: 260 }}>Find customer<input placeholder="Customer name or contact ID" value={f.q} onChange={(e) => apply({ q: e.target.value })} /></label>
-          {sel("Weekly", "fw", V.weeks)}{sel("Onboarding Officer", "fo", V.oos)}{sel("Tenure", "fn", TENURES)}{sel("Strategy", "fg", STRATS)}{sel("Types of Calls", "fct", CTYPES)}
-          <label>Agent status<select value={f.fs} onChange={(e) => apply({ fs: e.target.value })}><option>Active</option><option>Inactive</option><option value="All">Active + Inactive</option></select></label>
-          <label>From<input type="date" value={f.from} onChange={(e) => apply({ from: e.target.value })} /></label>
-          <label>To<input type="date" value={f.to} onChange={(e) => apply({ to: e.target.value })} /></label>
-        </div>
-        <div className="fnow">
-          <span className="cnt">Showing <b>{V.list.length}</b> of {V.total} audits</span>
-          {chips.map((c) => <span key={c.k} className="chip noprint">{c.t}<button aria-label={"Remove filter " + c.t} onClick={c.rm}>×</button></span>)}
-          {chips.length > 0 && <button className="g noprint" style={{ padding: "3px 12px", fontSize: 13 }} onClick={F.reset}>Reset filters</button>}
-        </div>
+      <div className="pgh pgr">
+        <div><h2>{title}</h2><p>{sub}</p></div>
+        <div className="pga noprint"><button className="g fbtn" onClick={() => setOpen(true)} aria-haspopup="dialog">Filters{chips.length > 0 && <span className="badge">{chips.length}</span>}</button></div>
       </div>
+      <div className="fnow">
+        <span className="cnt">Showing <b>{V.list.length}</b> of {V.total} audits</span>
+        {chips.map((c) => <span key={c.k} className="chip noprint">{c.t}<button aria-label={"Remove filter " + c.t} onClick={c.rm}>×</button></span>)}
+        {chips.length > 0 && <button className="g noprint" style={{ padding: "3px 12px", fontSize: 13 }} onClick={F.reset}>Reset filters</button>}
+      </div>
+      <div className={"dscrim noprint" + (open ? " on" : "")} onClick={() => setOpen(false)} />
+      <aside className={"drawer noprint" + (open ? " open" : "")} role="dialog" aria-label="Filters" aria-hidden={!open}>
+        <div className="dh"><h3>Filters</h3><button className="g" onClick={() => setOpen(false)}>Close</button></div>
+        <div className="db">
+          <div className="slg">
+            <Slicer title="Center" opts={V.centerOpts} sel={f.fc} onChange={(v) => apply({ fc: v })} />
+            <Slicer title="Team Leader" opts={V.tlOpts} sel={V.ftE} onChange={(v) => apply({ ft: v })} />
+            <Slicer title="Agent" opts={V.agOpts} sel={V.faE} onChange={(v) => apply({ fa: v })} />
+          </div>
+          <div className="flt">
+            <label>Find customer<input placeholder="Customer name or contact ID" value={f.q} onChange={(e) => apply({ q: e.target.value })} /></label>
+            {sel("Weekly", "fw", V.weeks)}{sel("Onboarding Officer", "fo", V.oos)}{sel("Tenure", "fn", TENURES)}{sel("Strategy", "fg", STRATS)}{sel("Types of Calls", "fct", CTYPES)}
+            <label>Agent status<select value={f.fs} onChange={(e) => apply({ fs: e.target.value })}><option>Active</option><option>Inactive</option><option value="All">Active + Inactive</option></select></label>
+            <label>From<input type="date" value={f.from} onChange={(e) => apply({ from: e.target.value })} /></label>
+            <label>To<input type="date" value={f.to} onChange={(e) => apply({ to: e.target.value })} /></label>
+          </div>
+        </div>
+        <div className="dfoot"><span className="cnt">Showing <b>{V.list.length}</b> of {V.total}</span><button className="g" onClick={F.reset}>Reset</button><button onClick={() => setOpen(false)}>Show results</button></div>
+      </aside>
     </div>
   );
 }

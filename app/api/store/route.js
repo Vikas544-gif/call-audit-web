@@ -1,5 +1,7 @@
 import { configured, pipeline, roleOf, protectedApp, parse } from "../../../lib/db";
 import { cmpOf } from "../../../lib/cmp";
+import { del } from "@vercel/blob";
+import { parseEntry, purgeExpired, DAY } from "../../../lib/audio";
 import { MCFG, OWNERS_V, DEFAULT_PARAMS, applyOwners } from "../../../lib/defaults";
 
 export const dynamic = "force-dynamic";
@@ -69,12 +71,30 @@ export async function POST(req) {
         }
       }
       a.cmp = cmpOf(a, prev);
-      const cmds = [["HSET", "audits", String(a.ts), JSON.stringify(a)]];
+      const cmds = [];
+      // the call recording (kept for keepDays) is attached to this audit, so the call can be played any time later
+      if (b.audioId) {
+        const [tx] = await pipeline([["HGET", "tx", String(b.audioId)]]);
+        const e = parseEntry(tx);
+        if (e) {
+          const [mc] = await pipeline([["GET", "mcfg3"]]);
+          const kd = (parse(mc) || {}).keepDays;
+          const days = kd == null ? 90 : Number(kd) || 0;
+          if (days > 0) {
+            const exp = Date.now() + days * DAY;
+            a.hasAudio = true; a.audioExp = exp;
+            cmds.push(["HSET", "audio", String(a.ts), JSON.stringify({ url: e.url, t: Date.now(), exp })], ["ZADD", "audio_exp", String(exp), String(a.ts)]);
+          } else { try { await del(e.url); } catch {} }
+          cmds.push(["HDEL", "tx", String(b.audioId)], ["ZREM", "tx_exp", String(b.audioId)]);
+        }
+      }
+      cmds.push(["HSET", "audits", String(a.ts), JSON.stringify(a)]);
       if (typeof b.transcript === "string" && b.transcript) cmds.push(["HSET", "scripts", String(a.ts), b.transcript.slice(0, 150000)]);
       const [cur] = await pipeline([["HGET", "last", key]]);
       const c = parse(cur);
       if (!c || c.ts < a.ts) cmds.push(["HSET", "last", key, JSON.stringify({ ts: a.ts, total: a.total, sc: a.sc, date: a.date })]);
       await pipeline(cmds);
+      if (Math.random() < 0.25) { try { await purgeExpired(pipeline, del); } catch {} } // now and then, remove recordings whose time is over
       return Response.json({ ok: true, audit: a });
     }
     if (b.action === "audits" && Array.isArray(b.audits) && b.audits.length) {

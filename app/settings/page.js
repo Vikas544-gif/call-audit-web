@@ -117,6 +117,15 @@ export default function SettingsPage() {
         </div>
 
         <div className="c">
+          <H3>Call recordings</H3>
+          <p className="muted" style={{ marginTop: 0 }}>The uploaded recording is kept so you can play the call any time you open an audited call. After the days below it is deleted by itself. Set 0 to delete the recording right after the script is made (the call can then not be played later). Recordings use storage in Vercel Blob, so a long time on many calls costs a little more.</p>
+          <div className="fg">
+            <label>Keep recordings for (days)<input type="number" min="0" max="730" value={mcfg.keepDays == null ? 90 : mcfg.keepDays} onChange={(e) => S.saveCfg({ ...mcfg, keepDays: Math.min(730, Math.max(0, Number(e.target.value) || 0)) })} /></label>
+          </div>
+          <p className="muted" style={{ fontSize: 13, marginBottom: 0 }}>Only new audits are affected. Customer voice is personal data: check your company policy and consent before you keep recordings.</p>
+        </div>
+
+        <div className="c">
           <H3>Late opening (call delay) rule</H3>
           <p className="muted" style={{ marginTop: 0 }}>The customer picks up and says hello. If the agent starts speaking later than the allowed seconds, the score of the opening parameter goes down automatically, and a "delayed opening" mistake is added. The delay is measured from the call script times.</p>
           <div className="row"><label style={{ display: "flex", gap: 8, alignItems: "center" }}><input type="checkbox" checked={mcfg.delayOn !== false} onChange={(e) => S.saveCfg({ ...mcfg, delayOn: e.target.checked }, true)} /> Reduce the opening score when the call opens late</label></div>
