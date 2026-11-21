@@ -97,6 +97,31 @@ export async function POST(req) {
       if (Math.random() < 0.25) { try { await purgeExpired(pipeline, del); } catch {} } // now and then, remove recordings whose time is over
       return Response.json({ ok: true, audit: a });
     }
+    if (b.action === "delete" && Array.isArray(b.tss) && b.tss.length) {
+      if (role !== "admin") return Response.json({ error: "admin only" }, { status: 403 });
+      const tss = [...new Set(b.tss.map(String))].slice(0, 200), set = new Set(tss);
+      const cmds = [], lastKeys = new Set();
+      for (const ts of tss) {
+        const [au, ad] = await pipeline([["HGET", "audits", ts], ["HGET", "audio", ts]]);
+        const a = parse(au), e = parseEntry(ad);
+        if (e) { try { await del(e.url); } catch {} } // the saved recording is deleted too
+        if (a && a.rep) lastKeys.add(String(a.rep).trim().toLowerCase());
+      }
+      cmds.push(["HDEL", "audits", ...tss], ["HDEL", "scripts", ...tss], ["HDEL", "audio", ...tss], ["ZREM", "audio_exp", ...tss]);
+      // follow-ups of these audits go too
+      const [tflat] = await pipeline([["HGETALL", "tasks"]]);
+      const tids = [];
+      for (let i = 1; i < (tflat || []).length; i += 2) { const t = parse(tflat[i]); if (t && set.has(String(t.auditTs))) tids.push(t.id); }
+      if (tids.length) cmds.push(["HDEL", "tasks", ...tids]);
+      // the per-agent "last audit" shortcut must not point at a deleted audit
+      for (const k of lastKeys) {
+        const [lr] = await pipeline([["HGET", "last", k]]);
+        const l = parse(lr);
+        if (l && set.has(String(l.ts))) cmds.push(["HDEL", "last", k]);
+      }
+      await pipeline(cmds);
+      return Response.json({ ok: true, deleted: tss.length, followups: tids.length });
+    }
     if (b.action === "audits" && Array.isArray(b.audits) && b.audits.length) {
       if (role !== "admin") return Response.json({ error: "admin only" }, { status: 403 });
       const args = [];

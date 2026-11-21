@@ -255,7 +255,7 @@ const L = ({ items }) => <ul style={{ margin: 0, paddingLeft: 20 }}>{(items || [
 const H3 = ({ children }) => <h3 style={{ marginTop: 0 }}>{children}</h3>;
 const resTag = { yes: "on1", partial: "warn1", no: "bad" };
 
-export function Detail({ r, info, params, weakPct, taskMap, onSend, busy, script, audioUrl }) {
+export function Detail({ r, info, params, weakPct, taskMap, onSend, busy, script, audioUrl, onDelete }) {
   const audioRef = useRef(null);
   const [audioSrc, setAudioSrc] = useState(audioUrl || ""), [audioSt, setAudioSt] = useState(audioUrl ? "ok" : r.hasAudio ? "loading" : "none");
   const [pl, setPl] = useState({ cur: 0, dur: 0, playing: false, rate: 1 });
@@ -360,6 +360,7 @@ export function Detail({ r, info, params, weakPct, taskMap, onSend, busy, script
       <div className="c"><H3>Missed opportunities</H3><L items={r.missed} /></div>
       <div className="c" style={{ borderLeft: "4px solid var(--good)" }}><H3>Steps to improve sales</H3><L items={r.tips} /></div>
       <ScriptBox r={r} text={scriptText} loading={scriptLoading} />
+      {onDelete && <div className="c noprint"><div className="row" style={{ marginBottom: 0 }}><button className="g dng" disabled={busy} onClick={onDelete}>Delete this audit</button><span className="muted" style={{ fontSize: 13 }}>Removes this audit with its script, its recording and its follow-ups. This cannot be undone.</span></div></div>}
     </div>
     </SeekCtx.Provider>
   );

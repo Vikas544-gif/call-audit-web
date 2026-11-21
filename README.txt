@@ -4,6 +4,8 @@ SEPARATE PAGES
   /audit       Audit page: upload calls, run audits (3 calls at the same time)
   /dashboard   Dashboard: KPIs, charts, agent-wise report (all scores in %), summaries      (admin)
   /calls       Audited calls: every call with customer, contact ID and mistakes; "By agent" view  (admin)
+               The Audited calls page has 3 views: By customer (default: all calls of one customer are ONE card; open it and pick the call by date, time and length), By call (one card per call), By agent.
+               Admin can delete: "Delete" on a card (one call), "Delete all" on a customer card, or "Delete this audit" inside a call. This also removes the script, the recording and the follow-ups. It asks first and cannot be undone.
   /mistakes    AI Mistakes: mistakes the AI found on its own (not only parameters), with quote, time and fix   (admin)
   /followups   Follow-ups: what the Trainer and the TLs have to do and have done              (admin)
   /settings    Settings: agents, centers, parameters + owners, mandatory statements, emails    (admin)
